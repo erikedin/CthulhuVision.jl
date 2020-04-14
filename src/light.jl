@@ -15,8 +15,8 @@ struct Ray
     b::Vec3
 end
 
-origin(r::Ray) = r.a
-direction(r::Ray) = r.b
-pointat(r::Ray, t::Float32) = r.a + t*r.b
+@inline origin(r::Ray) = r.a
+@inline direction(r::Ray) = r.b
+@inline pointat(r::Ray, t::Float32) = r.a + t*r.b
 
 end
