@@ -1,0 +1,4 @@
+name = "CthulhuVision"
+uuid = "ecf23cb5-dfda-41a6-843c-cb4813e28e17"
+authors = ["Erik Edin <erikedin@users.noreply.github.com>"]
+version = "0.1.0"
