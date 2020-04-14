@@ -1,6 +1,8 @@
 module Image
 
-export RGB, Dimension, Pixel, PPM, saveimage, pixel
+export RGB, Dimension, Pixel, PPM, saveimage, pixel, examplefilename
+
+using Dates
 
 struct RGB
     r::Float32
@@ -43,6 +45,11 @@ function saveimage(image::PPM, filename::String)
             end
         end
     end
+end
+
+function examplefilename(name::AbstractString) :: String
+    date = Dates.format(now(), "yyyymmdd-HHMMSS")
+    "example$(name)-$(date).ppm"
 end
 
 end

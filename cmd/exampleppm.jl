@@ -10,5 +10,4 @@ for x = 0:image.dimension.width-1, y = 0:image.dimension.height-1
     pixel(image, Pixel(x, y), rgb)
 end
 
-date = Dates.format(now(), "yyyymmdd-HHMMSS")
-saveimage(image, "exampleppm-$(date).ppm")
+saveimage(image, examplefilename("ppm"))
