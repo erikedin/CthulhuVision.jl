@@ -2,7 +2,13 @@ module Light
 
 using CthulhuVision.Math
 
-export Ray, origin, direction, pointat
+export Ray, RGB, origin, direction, pointat
+
+struct RGB
+    r::Float32
+    g::Float32
+    b::Float32
+end
 
 struct Ray
     a::Vec3

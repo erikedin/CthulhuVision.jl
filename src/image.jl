@@ -1,14 +1,9 @@
 module Image
 
-export RGB, Dimension, Pixel, PPM, saveimage, pixel, examplefilename
+export Dimension, Pixel, PPM, saveimage, pixel, examplefilename
 
 using Dates
-
-struct RGB
-    r::Float32
-    g::Float32
-    b::Float32
-end
+using CthulhuVision.Light
 
 struct Dimension
     width::Int
