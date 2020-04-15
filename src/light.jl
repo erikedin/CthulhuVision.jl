@@ -10,6 +10,8 @@ struct RGB
     b::Float32
 end
 
+@inline Base.:*(t::Float32, rgb::RGB) :: RGB = RGB(t*rgb.r, t*rgb.g, t*rgb.b)
+
 struct Ray
     a::Vec3
     b::Vec3

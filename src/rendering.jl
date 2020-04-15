@@ -8,19 +8,25 @@ using CthulhuVision.Math
 using CthulhuVision.Light
 using CthulhuVision.Image
 
-@inline function hitsphere(center::Vec3, radius::Float32, ray::Ray) :: Bool
+@inline function hitsphere(center::Vec3, radius::Float32, ray::Ray) :: Float32
     oc = origin(ray) - center
     a = dot(direction(ray), direction(ray))
     b = 2.0f0 * dot(oc, direction(ray))
     c = dot(oc, oc) - radius*radius
     discriminant = b*b - 4.0f0*a*c
     
-    discriminant > 0.0f0
+    if discriminant < 0.0f0
+        -1.0f0
+    else
+        (-b - CUDAnative.sqrt(discriminant)) / (2.0f0*a)
+    end
 end
 
 @inline function color(r::Ray) :: RGB
-    if hitsphere(Vec3(0.0f0, 0.0f0, -1.0f0), 0.5f0, r)
-        return RGB(1.0f0, 0.0f0, 0.0f0)
+    t = hitsphere(Vec3(0.0f0, 0.0f0, -1.0f0), 0.5f0, r)
+    if t > 0.0f0
+        n = unit(pointat(r, t) - Vec3(0.0f0, 0.0f0, -1.0f0))
+        return 0.5f0*RGB(n.x + 1.0f0, n.y + 1.0f0, n.z + 1.0f0)
     end
     unitdirection = unit(direction(r))
     t = 0.5f0 * (unitdirection.y + 1.0f0)
