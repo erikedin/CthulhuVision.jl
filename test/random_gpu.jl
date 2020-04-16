@@ -4,8 +4,6 @@ using CuArrays
 
 using CthulhuVision.Random
 
-CuArrays.@allowscalar false
-
 function splitmix64_gpu(seed::UInt64, n::Int, result)
 
     x = threadIdx().x
@@ -14,6 +12,20 @@ function splitmix64_gpu(seed::UInt64, n::Int, result)
         sm = SplitMix64(seed)
         for i = 1:n
             @inbounds result[i] = next(sm)
+        end
+    end
+
+    nothing
+end
+
+function xoshiro256pp_gpu(s0::UInt64, s1::UInt64, s2::UInt64, s3::UInt64, n::Int, result)
+
+    x = threadIdx().x
+
+    if x == 1
+        r = Xoshiro256pp(s0, s1, s2, s3)
+        for i = 1:n
+            @inbounds result[i] = next(r)
         end
     end
 
@@ -129,6 +141,85 @@ end
 
         for i = 1:n
             @test result_host[i] == fromseed123[i]
+        end
+    end
+
+    @testset "Xoshiro256++ validation: First seed" begin
+        n = 100
+        result = CuArray{UInt64}(undef, n)
+
+        CUDAnative.@sync begin
+            @cuda threads=16 xoshiro256pp_gpu(0xe220a8397b1dcdaf, 0x6e789e6aa1b965f4, 0x06c45d188009454f, 0xf88bb8a8724c81ec, n, result)
+        end
+
+        # The seeds are taken from the SplitMix64 test vectors.
+        # Seed 0xe220a8397b1dcdaf 0x6e789e6aa1b965f4 0x06c45d188009454f 0xf88bb8a8724c81ec:
+        xshr256_test_1 = [
+            0x53175d61490b23df, 0x61da6f3dc380d507, 0x5c0fdf91ec9a7bfc, 0x02eebf8c3bbe5e1a, 0x7eca04ebaf4a5eea, 
+            0x0543c37757f08d9a, 0xdb7490c75ab5026e, 0xd87343e6464bc959, 0x4b7da0a02389f0ff, 0x1300fc58c0424c16, 
+            0x5084843206c19968, 0x10ea073de9aa4dfc, 0x1aae554343960cc1, 0x1804139f10fae720, 0x10d790e7b8ac10fa, 
+            0x667d2bffdd1496f7, 0xa04620d3d0fc04a8, 0x1d50881230af9cc3, 0x53be287ded35f698, 0x673235793f7908e1, 
+            0x46e91feb4535fbdc, 0x216c1524cbac57c0, 0x0a53eb08063a44df, 0x45f965b948778197, 0x6f2fa9d01ba03887, 
+            0x60c57eba69ed4e15, 0x22c65ce977dd39cb, 0xa5d1ce0c5a7c6abf, 0xe8e26337cde13268, 0x0b4a575fdb6f8160, 
+            0x400feb0bae786424, 0x633e0b621080bf50, 0x5a456e5a144e059b, 0xdc75548b5cd2e8cd, 0xdf9d76f766648113, 
+            0x342bf8b7aec0de41, 0x831593e6b50ae928, 0x29e12b2a1872d7db, 0xb6362d8b640aec49, 0x2e78698eb5bba4a9, 
+            0x9064494b8287afb9, 0x4c04974c6c1b4767, 0x5863b8685408be73, 0x0e8ca571066bc302, 0x088959d638956a37, 
+            0x2e9392dfd5c30e86, 0x36da000d696e9d9e, 0x2a839b60548c1044, 0x3ebbaffcc5f270ca, 0x6da02738c0f92ee5, 
+            0x962fd83157fe1682, 0x856dcc088cece014, 0xca8717351ab24cbd, 0x231527552d018184, 0x06793b14839607ec, 
+            0xc54f89a7e193e5c1, 0xbacc209dd739707c, 0x7dc7053580f1ff20, 0x4ee696659cc1be91, 0xa3cb5d7769921646, 
+            0x9c002aaa8a687ded, 0xc0c3a216563d9ae2, 0x035b6d98ee8a1b19, 0x68d89ab6ea60f57d, 0xec45ebfcc75a43fc, 
+            0xc5baecd6bbbc6a26, 0x699d89305420574e, 0x48dce98c29e291a9, 0xb48e120ad1f9f23e, 0xe7c6368bd2aa145f, 
+            0xcf6e7679e474e800, 0x3d55f9180cf7bd5a, 0xd07064c4f0125475, 0x9784173bc20bb2cf, 0xc3296df2c4be97be, 
+            0x7ef38a3feaea3dcc, 0xa93ae5c3e3ac91b3, 0xc173a3156ae8e099, 0xa44373eaf0aff364, 0xb2a0bfb5000b2197, 
+            0xa49a7367daa7357f, 0x6be7b09a41e8061b, 0xa78c4d974c96b3fb, 0x28f7fbded613a963, 0x294d2574459f8cca, 
+            0xf3b457be6842a7ca, 0x9ce67b8b49364712, 0xd1b547099732fb15, 0x3538f30d9343b292, 0xc30c6e4c0dbee4c4, 
+            0x90b83117f578872c, 0xee166f8ef6076653, 0x671a16f58b431a4d, 0xa272fd92ddc2c04e, 0xf2bf4fd243cb8c2d, 
+            0xd2090a5c8c865eef, 0x7fd93d8b5401a273, 0x1ca67e32b0e47584, 0xb30ff462f8392fec, 0xb16ca64963ede86f, 
+        ]
+
+        result_host = Vector{UInt64}(result)
+
+        for i = 1:n
+            @test result_host[i] == xshr256_test_1[i]
+        end
+    end
+    
+    @testset "Xoshiro256++ validation: Second seed" begin
+        n = 100
+        result = CuArray{UInt64}(undef, n)
+
+        CUDAnative.@sync begin
+            @cuda threads=16 xoshiro256pp_gpu(0xa747f481346acb72, 0x8ad918349ab73966, 0xbec62b7cc97a0873, 0xf4975b3f04f272de, n, result)
+        end
+
+        # Seed 0xa747f481346acb72 0x8ad918349ab73966 0xbec62b7cc97a0873 0xf4975b3f04f272de:
+        xshr256_test_2 = [
+            0x8764a3205cb8bb19, 0x83430004f370c12d, 0x4b25f419b4c33798, 0x8a513a4e0cb13f7d, 0x838ec104e7520e51, 
+            0x9d4e0fbd9efbd410, 0x4699cac599252763, 0x9d12a1920aa92ea6, 0x16f58890f28f73f0, 0xb9a3d53227a00f2a, 
+            0x0a13b7dbe3e75ea8, 0x79ffcf5f0c8d1100, 0x99ece4fbeb7313dc, 0xc3f87b278b8ee4e1, 0x16a11441a19431e6, 
+            0x67513ad840dac4c9, 0xc1e06281c8136e1c, 0x45fff01d45e28278, 0xbd34ecbec4c2dfd1, 0x8e1473a6621058bb, 
+            0x5a4d7b7f47cd940d, 0xc1895931810f51e4, 0xe2da937313d1c62b, 0x2457af5f33bd5dc8, 0xeee84ffaf344e299, 
+            0xba15cf4e32bdea22, 0xf6bdb5b21f9ec218, 0x1f57e7082a0e65e1, 0x0b0308f317319866, 0x9d7d1dd370af8c34, 
+            0x6dcaa675fa0b21f7, 0x81f6098b1b7fd554, 0x10b95cf55f11840f, 0x2618e9ca09439e81, 0xe3365a6aad20217a, 
+            0x91d9055d0163d663, 0x0e65d218a7775add, 0xd044ac77cd43fea5, 0x617118ea17e0b314, 0xc01d7ae0b8fa3785, 
+            0xacbe5ba699d219e2, 0xe7e11d4508e32276, 0xbfb68436cc59c458, 0x0625ba7690a02a54, 0x94a9adb4ad8289c3, 
+            0xfd9b4e6396f0b240, 0xb29486a69153d373, 0x541afedc53063ca5, 0x84b59a52889dddb7, 0x869d3adffcd07c97, 
+            0x13a2a3363624c07f, 0x9a5db06194d2cd66, 0x588fc64b9737ed95, 0xe1c08df219eb64bb, 0x361074055893ede1, 
+            0x9ca5480c4e77c5a8, 0x49f4b91279da85b3, 0xbb455871f21e0c38, 0x5ca49b23e994955b, 0xdb9261adea4fb9b6, 
+            0x1f439d23db8369a5, 0x4b23e1a8a2b567f0, 0xf7f9b8afc8a989f4, 0x2eb334a70476a1d5, 0x473826fbd4e3a603, 
+            0xf09a459b1860dd91, 0xc82e3ccb001f5a52, 0xd6cbdf410e30ce1d, 0x9b3bf1f29c0c524b, 0x896c2533de1e7e8a, 
+            0x9cdad573ce10cde1, 0xbb084c48360588db, 0x6140567a93f1c7a8, 0x66f960c75ec1a817, 0x3e6de19b9f056c71, 
+            0x3f563c8f3d00f8f2, 0xfa0db14f62a2aa2c, 0x4f085fd50a99a966, 0x9b4c8efdf3c99fb5, 0xbc18d391b6930fdc, 
+            0x75cfbab414b7cb69, 0x4c0894009af8eea7, 0x945283b2b9824dc7, 0x9db7b027499d18ca, 0x37510bb9f0fefc6f, 
+            0xfa2aceb93f756441, 0x604623f851ca0192, 0xebeeebf959db2c26, 0xb482490e0bdc79aa, 0x6ec59aa11bb8b941, 
+            0xe000f1d2445876af, 0x3810a2f6e9ca3e49, 0x54434cd018715317, 0xd243f33a759bc4ca, 0xb7859923fe236fb3, 
+            0x20d77e1aced47630, 0x31f0224fc82805e7, 0xcc6b181f051b66d0, 0x3c10226521a38a2c, 0x7a740af5acd8d654, 
+        ]
+
+        result_host = Vector{UInt64}(result)
+
+        for i = 1:n
+            @test result_host[i] == xshr256_test_2[i]
         end
     end
 end
