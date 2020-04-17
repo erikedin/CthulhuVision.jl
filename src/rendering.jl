@@ -84,7 +84,7 @@ end
             ray = Ray(rec.p, target - rec.p)
             factor *= 0.5f0
         else
-            unitdirection = unit(direction(r))
+            unitdirection = unit(direction(ray))
             t = 0.5f0 * (unitdirection.y + 1.0f0)
             vec = (1.0f0 - t)*Vec3(1.0f0, 1.0f0, 1.0f0) + t*Vec3(0.5f0, 0.7f0, 1.0f0)
             result = result + factor * RGB(vec.x, vec.y, vec.z)
