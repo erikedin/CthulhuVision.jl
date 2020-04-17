@@ -111,7 +111,7 @@ function gpurender(a, camera::SimpleCamera, width, height, world)
 
     rng = makeprng()
 
-    nsamples = 100
+    nsamples = 1000
 
     if x < width && y < height
         col = RGB(0.0f0, 0.0f0, 0.0f0)

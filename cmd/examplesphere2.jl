@@ -3,8 +3,8 @@ using CthulhuVision.Math
 using CthulhuVision.Light
 using CthulhuVision.Rendering
 
-width = 800
-height = 400
+width = 400
+height = 200
 image = PPM(Dimension(width, height))
 
 world = Vector{Sphere}([
