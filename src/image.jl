@@ -33,9 +33,9 @@ function saveimage(image::PPM, filename::String)
         for y = image.dimension.height - 1:-1:0
             for x = 0:image.dimension.width - 1
                 rgb = image.pixels[Pixel(x, y)]
-                r = trunc(Int, 255.99f0*rgb.r)
-                g = trunc(Int, 255.99f0*rgb.g)
-                b = trunc(Int, 255.99f0*rgb.b)
+                r = trunc(Int, 255.99f0*sqrt(rgb.r))
+                g = trunc(Int, 255.99f0*sqrt(rgb.g))
+                b = trunc(Int, 255.99f0*sqrt(rgb.b))
                 write(io, "$r $g $b\n")
             end
         end

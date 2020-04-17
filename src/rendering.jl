@@ -69,16 +69,30 @@ end
     rec
 end
 
-@inline function color(r::Ray, spheres::AbstractVector{Sphere}) :: RGB
-    rec = hit(spheres, 0.0f0, typemax(Float32), r)
-    if rec.ishit
-        0.5f0*RGB(rec.normal.x + 1.0f0, rec.normal.y + 1.0f0, rec.normal.z + 1.0f0)
-    else
-        unitdirection = unit(direction(r))
-        t = 0.5f0 * (unitdirection.y + 1.0f0)
-        vec = (1.0f0 - t)*Vec3(1.0f0, 1.0f0, 1.0f0) + t*Vec3(0.5f0, 0.7f0, 1.0f0)
-        RGB(vec.x, vec.y, vec.z)
+@inline function color(r::Ray, spheres::AbstractVector{Sphere}, rng::UniformRNG) :: RGB
+    maxbounces = 50
+
+    factor = 1.0f0
+    result = RGB(0.0f0, 0.0f0, 0.0f0)
+    ray = r
+
+    for i = 1:maxbounces
+        rec = hit(spheres, 0.001f0, typemax(Float32), ray)
+
+        if rec.ishit
+            target = rec.p + rec.normal + randominunitsphere(rng)
+            ray = Ray(rec.p, target - rec.p)
+            factor *= 0.5f0
+        else
+            unitdirection = unit(direction(r))
+            t = 0.5f0 * (unitdirection.y + 1.0f0)
+            vec = (1.0f0 - t)*Vec3(1.0f0, 1.0f0, 1.0f0) + t*Vec3(0.5f0, 0.7f0, 1.0f0)
+            result = result + factor * RGB(vec.x, vec.y, vec.z)
+            break
+        end
     end
+
+    result
 end
 
 @inline function makeprng() :: UniformRNG
@@ -95,7 +109,7 @@ function gpurender(a, camera::SimpleCamera, width, height, world)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
-    prng = makeprng()
+    rng = makeprng()
 
     nsamples = 100
 
@@ -103,12 +117,12 @@ function gpurender(a, camera::SimpleCamera, width, height, world)
         col = RGB(0.0f0, 0.0f0, 0.0f0)
 
         for s = 1:nsamples
-            dx = next(prng)
-            dy = next(prng)
+            dx = next(rng)
+            dy = next(rng)
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
             ray = getray(camera, u, v)
-            col = col + color(ray, world)
+            col = col + color(ray, world, rng)
         end
 
         col /= Float32(nsamples)
