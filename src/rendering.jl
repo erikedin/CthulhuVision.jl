@@ -81,14 +81,14 @@ end
     end
 end
 
-@inline function makeprng() :: Xoshiro256pp
+@inline function makeprng() :: UniformRNG
     index = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     seedgen = SplitMix64(index)
     s0 = next(seedgen)
     s1 = next(seedgen)
     s2 = next(seedgen)
     s3 = next(seedgen)
-    Xoshiro256pp(s0, s1, s2, s3)
+    UniformRNG(Xoshiro256pp(s0, s1, s2, s3))
 end
 
 function gpurender(a, camera::SimpleCamera, width, height, world)
@@ -103,8 +103,8 @@ function gpurender(a, camera::SimpleCamera, width, height, world)
         col = RGB(0.0f0, 0.0f0, 0.0f0)
 
         for s = 1:nsamples
-            dx = uniform32(next(prng))
-            dy = uniform32(next(prng))
+            dx = next(prng)
+            dy = next(prng)
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
             ray = getray(camera, u, v)

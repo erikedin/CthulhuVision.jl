@@ -1,6 +1,6 @@
 module Random
 
-export uniform32, SplitMix64, Xoshiro256pp, next
+export uniform32, SplitMix64, Xoshiro256pp, UniformRNG, next
 
 @inline function uniform32(x::UInt64) :: Float32
     fract = UInt32((x >> 41) & 0b0_0000_0000_1111_1111_1111_1111_1111_111)
@@ -51,6 +51,17 @@ end
     r.s3 = rotl(r.s3, 45)
 
     result
+end
+
+# A wrapper around Xoshiro256pp to generate Float32s in the range
+# 0.0 <= r < 1.0
+
+struct UniformRNG
+    x::Xoshiro256pp
+end
+
+@inline function next(r::UniformRNG) :: Float32
+    uniform32(next(r.x))
 end
 
 end
