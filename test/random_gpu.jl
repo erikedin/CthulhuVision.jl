@@ -3,6 +3,7 @@ using CUDAnative
 using CuArrays
 
 using CthulhuVision.Random
+using CthulhuVision.Rendering: makeprng
 
 function splitmix64_gpu(seed::UInt64, n::Int, result)
 
@@ -42,6 +43,20 @@ function uniform32_gpu(us, fs, n::Int)
         end
     end
 
+    nothing
+end
+
+# This kernel tests the factory function that creates a PRNG, with a seed value
+# generated from the CUDA thread and block indices.
+# Each thread generates a single Float32 value from the PRNG, and stores it in
+# the `values` array. This allows us to verify that all Float32 values are different,
+# so that we don't accidentally use a single seed, or a seed that repeats.
+function prng_from_thread_and_block_gpu(values, n)
+    idx = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    if idx <= n
+        rng = makeprng()
+        @inbounds values[idx] = next(rng)
+    end
     nothing
 end
 
@@ -221,5 +236,24 @@ end
         for i = 1:n
             @test result_host[i] == xshr256_test_2[i]
         end
+    end
+
+    @testset "Generate PRNG from thread and block indices" begin
+        threads = 128
+        blocks = 8
+
+        n = threads * blocks
+        values_dev = CuArray{Float32}(undef, n)
+
+        CuArrays.@sync begin
+            @cuda threads=threads blocks=blocks prng_from_thread_and_block_gpu(values_dev, n)
+        end
+
+        values_host = Vector{Float32}(values_dev)
+        values_set = Set{Float32}(values_host)
+
+        # This ensures that each element in `values_dev` is different from all
+        # other elements.
+        @test length(values_set) == n
     end
 end
