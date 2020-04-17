@@ -8,6 +8,7 @@ using CthulhuVision.Random
 using CthulhuVision.Math
 using CthulhuVision.Light
 using CthulhuVision.Image
+using CthulhuVision.Camera
 
 struct HitRecord
     t::Float32
@@ -80,27 +81,6 @@ end
     end
 end
 
-function gpurender(a, width, height, world)
-    y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-
-    if x < width && y < height
-        lowerleft  = Vec3(-2.0f0, -1.0f0, -1.0f0)
-        horizontal = Vec3( 4.0f0,  0.0f0,  0.0f0)
-        vertical   = Vec3( 0.0f0,  2.0f0,  0.0f0)
-        origin     = Vec3( 0.0f0,  0.0f0,  0.0f0)
-
-        u = Float32(x / width)
-        v = Float32(y / height)
-        ray = Ray(origin, lowerleft + u*horizontal + v*vertical)
-        c = color(ray, world)
-
-        @inbounds a[y, x] = c
-    end
-
-    return nothing
-end
-
 @inline function makeprng() :: Xoshiro256pp
     index = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     seedgen = SplitMix64(index)
@@ -111,6 +91,34 @@ end
     Xoshiro256pp(s0, s1, s2, s3)
 end
 
+function gpurender(a, camera::SimpleCamera, width, height, world)
+    y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+
+    prng = makeprng()
+
+    nsamples = 100
+
+    if x < width && y < height
+        col = RGB(0.0f0, 0.0f0, 0.0f0)
+
+        for s = 1:nsamples
+            dx = uniform32(next(prng))
+            dy = uniform32(next(prng))
+            u = Float32((x + dx) / width)
+            v = Float32((y + dy) / height)
+            ray = getray(camera, u, v)
+            col = col + color(ray, world)
+        end
+
+        col /= Float32(nsamples)
+
+        @inbounds a[y, x] = col
+    end
+
+    return nothing
+end
+
 function render(image::PPM, world::AbstractVector{Sphere})
     CuArrays.@allowscalar false
 
@@ -119,8 +127,14 @@ function render(image::PPM, world::AbstractVector{Sphere})
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
 
+    lowerleft  = Vec3(-2.0f0, -1.0f0, -1.0f0)
+    horizontal = Vec3( 4.0f0,  0.0f0,  0.0f0)
+    vertical   = Vec3( 0.0f0,  2.0f0,  0.0f0)
+    origin     = Vec3( 0.0f0,  0.0f0,  0.0f0)
+    camera = SimpleCamera(origin, lowerleft, horizontal, vertical)
+
     CuArrays.@sync begin
-        @cuda threads=(16, 16) blocks=blocks gpurender(pixels, image.dimension.width, image.dimension.height, world_d)
+        @cuda threads=(16, 16) blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d)
     end
 
     for y = 0:image.dimension.height-1, x = 0:image.dimension.width-1
