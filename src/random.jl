@@ -1,6 +1,6 @@
 module Random
 
-export uniform32, SplitMix64, Xoshiro256pp, UniformRNG, next
+export uniform32, SplitMix64, Xoshiro256pp, UniformRNG, next, uniformfromindex, choose
 
 @inline function uniform32(x::UInt64) :: Float32
     fract = UInt32((x >> 41) & 0b0_0000_0000_1111_1111_1111_1111_1111_111)
@@ -62,6 +62,17 @@ end
 
 @inline function next(r::UniformRNG) :: Float32
     uniform32(next(r.x))
+end
+
+# Factory function to create a UniformRNG from an index, which is
+# normally the CUDA thread index.
+@inline function uniformfromindex(index) :: UniformRNG
+    seedgen = SplitMix64(index)
+    s0 = next(seedgen)
+    s1 = next(seedgen)
+    s2 = next(seedgen)
+    s3 = next(seedgen)
+    UniformRNG(Xoshiro256pp(s0, s1, s2, s3))
 end
 
 end

@@ -93,12 +93,7 @@ end
 
 @inline function makeprng() :: UniformRNG
     index = threadIdx().x + (blockIdx().x - 1) * blockDim().x
-    seedgen = SplitMix64(index)
-    s0 = next(seedgen)
-    s1 = next(seedgen)
-    s2 = next(seedgen)
-    s3 = next(seedgen)
-    UniformRNG(Xoshiro256pp(s0, s1, s2, s3))
+    uniformfromindex(index)
 end
 
 function gpurender(a, camera::SimpleCamera, width, height, world)

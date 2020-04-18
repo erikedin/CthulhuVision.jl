@@ -38,11 +38,31 @@ struct HitRecord
     HitRecord(t::Float32, p::Vec3, normal::Vec3, material::Material) = new(t, p, normal, true, material)
 end
 
-@inline function scatter(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
+@inline function scatterlambert(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
     target = rec.p + rec.normal + randominunitsphere(rng)
     scattered = Ray(rec.p, target - rec.p)
     
     Scatter(scattered, rec.material.albedo, true)
+end
+
+@inline reflect(v::Vec3, n::Vec3) :: Vec3 = v - 2.0f0 * dot(v, n) * n
+
+@inline function scattermetal(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
+    reflected = reflect(unit(direction(ray)), rec.normal)
+    scattered = Ray(rec.p, reflected)
+    isreflected = dot(direction(scattered), rec.normal) > 0.0f0
+
+    Scatter(scattered, rec.material.albedo, isreflected)
+end
+
+@inline function scatter(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
+    materialprob = next(rng)
+
+    if materialprob <= rec.material.plambert
+        scatterlambert(ray, rec, rng)
+    else #if materialprob <= rec.material.pmetal
+        scattermetal(ray, rec, rng)
+    end
 end
 
 end
