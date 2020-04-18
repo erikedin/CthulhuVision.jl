@@ -6,8 +6,8 @@ using CthulhuVision.Rendering
 using CthulhuVision.Camera
 using CthulhuVision.Random
 
-width = 400
-height = 200
+width = 800
+height = 400
 image = PPM(Dimension(width, height))
 
 brown = lambertian(RGB(0.4f0, 0.2f0, 0.1f0))

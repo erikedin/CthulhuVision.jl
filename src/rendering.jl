@@ -104,7 +104,7 @@ function gpurender(a, camera, width, height, world)
 
     nsamples = 1000
 
-    if x < width && y < height
+    if x <= width && y <= height
         col = RGB(0.0f0, 0.0f0, 0.0f0)
 
         for s = 1:nsamples
