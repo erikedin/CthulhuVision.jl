@@ -1,6 +1,6 @@
 module Math
 
-export Vec3, len, unit, dot, randominunitsphere, squaredlength
+export Vec3, len, unit, dot, randominunitsphere, squaredlength, cross
 
 using CUDAnative
 using CthulhuVision.Random
@@ -20,6 +20,14 @@ end
 @inline squaredlength(a::Vec3) :: Float32 = a.x*a.x + a.y*a.y + a.z*a.z
 
 @inline dot(a::Vec3, b::Vec3) :: Float32 = a.x * b.x + a.y * b.y + a.z * b.z
+
+@inline function cross(a::Vec3, b::Vec3) :: Vec3
+    Vec3(
+          a.y * b.z - a.z * b.y,
+        -(a.x * b.z - a.z * b.x),
+          a.x * b.y - a.y * b.x
+    )
+end
 
 @inline function unit(a::Vec3) :: Vec3
     l = len(a)
