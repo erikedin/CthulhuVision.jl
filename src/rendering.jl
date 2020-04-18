@@ -9,20 +9,12 @@ using CthulhuVision.Math
 using CthulhuVision.Light
 using CthulhuVision.Image
 using CthulhuVision.Camera
-
-struct HitRecord
-    t::Float32
-    p::Vec3
-    normal::Vec3
-    ishit::Bool
-
-    HitRecord() = new(typemax(Float32), Vec3(0.0f0, 0.0f0, 0.0f0), Vec3(0.0f0, 0.0f0, 0.0f0), false)
-    HitRecord(t::Float32, p::Vec3, normal::Vec3) = new(t, p, normal, true)
-end
+using CthulhuVision.Materials
 
 struct Sphere
     center::Vec3
     radius::Float32
+    material::Material
 end
 
 @inline function hit(sphere::Sphere, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
@@ -41,7 +33,7 @@ end
             # but that will bite me in the ass later when a trick requires
             # the radius to be negative here.
             normal = (p - sphere.center) / sphere.radius
-            return HitRecord(t, p, normal)
+            return HitRecord(t, p, normal, sphere.material)
         end
 
         t = (-b + CUDAnative.sqrt(b*b - a*c)) / a
@@ -49,7 +41,7 @@ end
             p = pointat(ray, t)
             # Same here. Ass-biting.
             normal = (p - sphere.center) / sphere.radius
-            return HitRecord(t, p, normal)
+            return HitRecord(t, p, normal, sphere.material)
         end
     end
     
