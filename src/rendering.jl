@@ -112,7 +112,7 @@ function gpurender(a, camera, width, height, world)
             dy = next(rng)
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
-            ray = getray(camera, u, v)
+            ray = getray(camera, u, v, rng)
             col = col + color(ray, world, rng)
         end
 
@@ -135,10 +135,13 @@ function render(image::PPM, world::AbstractVector{Sphere})
     aspect = Float32(image.dimension.width / image.dimension.height)
     vfov = 20.0f0
 
-    lookfrom = Vec3(-2.0f0, 2.0f0, 1.0f0)
+    lookfrom = Vec3(3.0f0, 3.0f0, 2.0f0)
     lookat = Vec3(0.0f0, 0.0f0, -1.0f0)
     vup = Vec3(0.0f0, 1.0f0, 0.0f0)
-    camera = FovCamera(lookfrom, lookat, vup, vfov, aspect)
+    focusdist = lenhost(lookfrom - lookat)
+    aperture = 2.0f0
+
+    camera = FovCamera(lookfrom, lookat, vup, vfov, aspect, aperture, focusdist)
 
     CuArrays.@sync begin
         @cuda threads=(16, 16) blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d)
