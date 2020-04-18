@@ -13,17 +13,17 @@ struct SimpleCamera
     vertical   :: Vec3
 end
 
-function getray(cam::SimpleCamera, u::Float32, v::Float32, rng::UniformRNG) :: Ray
+@inline function getray(cam::SimpleCamera, u::Float32, v::Float32, rng::UniformRNG) :: Ray
     direction = cam.lowerleft + u*cam.horizontal + v*cam.vertical - cam.origin
     Ray(cam.origin, direction)
 end
 
 @inline unithost(v::Vec3) = 1.0f0 / sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * v
 
-@inline function randominunitdisk(rng::UniformRNG)
+@inline function randominunitdisk(rng::UniformRNG) :: Vec3
     p = Vec3(1.0f0, 1.0f0, 0.0f0)
 
-    while squaredlength(p) >= 1.0f0
+    while dot(p, p) >= 1.0f0
         p = 2.0f0 * Vec3(next(rng), next(rng), 0.0f0) - Vec3(1.0f0, 1.0f0, 0.0f0)
     end
 
@@ -59,13 +59,11 @@ struct FovCamera
     end
 end
 
-function getray(cam::FovCamera, s::Float32, t::Float32, rng::UniformRNG) :: Ray
-    #rd = cam.lensradius * randominunitdisk(rng)
-    #offset = rd.x * cam.u + rd.y * cam.v
-    #direction = cam.lowerleft + s*cam.horizontal + t*cam.vertical - cam.origin - offset
-    direction = cam.lowerleft + s*cam.horizontal + t*cam.vertical - cam.origin
-    #Ray(cam.origin + offset, direction)
-    Ray(cam.origin, direction)
+@inline function getray(cam::FovCamera, s::Float32, t::Float32, rng::UniformRNG) :: Ray
+    rd = cam.lensradius * randominunitdisk(rng)
+    offset = rd.x * cam.u + rd.y * cam.v
+    direction = cam.lowerleft + s*cam.horizontal + t*cam.vertical - cam.origin - offset
+    Ray(cam.origin + offset, direction)
 end
 
 end
