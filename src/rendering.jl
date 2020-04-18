@@ -96,7 +96,7 @@ end
     uniformfromindex(index)
 end
 
-function gpurender(a, camera::SimpleCamera, width, height, world)
+function gpurender(a, camera, width, height, world)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
@@ -132,11 +132,10 @@ function render(image::PPM, world::AbstractVector{Sphere})
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
 
-    lowerleft  = Vec3(-2.0f0, -1.0f0, -1.0f0)
-    horizontal = Vec3( 4.0f0,  0.0f0,  0.0f0)
-    vertical   = Vec3( 0.0f0,  2.0f0,  0.0f0)
-    origin     = Vec3( 0.0f0,  0.0f0,  0.0f0)
-    camera = SimpleCamera(origin, lowerleft, horizontal, vertical)
+    aspect = Float32(image.dimension.width / image.dimension.height)
+    vfov = 90.0f0
+
+    camera = FovCamera(vfov, aspect)
 
     CuArrays.@sync begin
         @cuda threads=(16, 16) blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d)
