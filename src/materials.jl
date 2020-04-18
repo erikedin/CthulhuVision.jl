@@ -8,13 +8,14 @@ using CthulhuVision.Light
 
 struct Material
     albedo   :: RGB
+    fuzz     :: Float32
     plambert :: Float32
     pmetal   :: Float32
 end
 
-@inline nomaterial() = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0)
-@inline lambertian(albedo::RGB) = Material(albedo, 1.0f0, 0.0f0)
-@inline metal(albedo::RGB) = Material(albedo, 0.0f0, 1.0f0)
+@inline nomaterial() = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0, 0.0f0)
+@inline lambertian(albedo::RGB) = Material(albedo, 0.0f0, 1.0f0, 0.0f0)
+@inline metal(albedo::RGB, fuzz :: Float32 = 0.0f0) = Material(albedo, fuzz, 0.0f0, 1.0f0)
 
 struct Scatter
     ray::Ray
@@ -49,7 +50,7 @@ end
 
 @inline function scattermetal(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
     reflected = reflect(unit(direction(ray)), rec.normal)
-    scattered = Ray(rec.p, reflected)
+    scattered = Ray(rec.p, reflected + rec.material.fuzz * randominunitsphere(rng))
     isreflected = dot(direction(scattered), rec.normal) > 0.0f0
 
     Scatter(scattered, rec.material.albedo, isreflected)

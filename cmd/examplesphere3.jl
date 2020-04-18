@@ -10,8 +10,8 @@ image = PPM(Dimension(width, height))
 
 greenmaterial = lambertian(RGB(0.8f0, 0.8f0, 0.0f0))
 redish = lambertian(RGB(0.8f0, 0.3f0, 0.3f0))
-metal1 = metal(RGB(0.8f0, 0.6f0, 0.2f0))
-metal2 = metal(RGB(0.8f0, 0.8f0, 0.8f0))
+metal1 = metal(RGB(0.8f0, 0.6f0, 0.2f0), 1.0f0)
+metal2 = metal(RGB(0.8f0, 0.8f0, 0.8f0), 0.3f0)
 
 world = Vector{Sphere}([
     Sphere(Vec3(0.0f0, 0.0f0, -1.0f0), 0.5f0, redish),
