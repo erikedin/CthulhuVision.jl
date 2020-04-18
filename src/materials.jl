@@ -1,14 +1,20 @@
 module Materials
 
-export HitRecord, Material, Scatter, scatter
+export HitRecord, Material, Scatter, scatter, lambertian, metal
 
 using CthulhuVision.Math
 using CthulhuVision.Random
 using CthulhuVision.Light
 
 struct Material
-    albedo::RGB
+    albedo   :: RGB
+    plambert :: Float32
+    pmetal   :: Float32
 end
+
+@inline nomaterial() = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0)
+@inline lambertian(albedo::RGB) = Material(albedo, 1.0f0, 0.0f0)
+@inline metal(albedo::RGB) = Material(albedo, 0.0f0, 1.0f0)
 
 struct Scatter
     ray::Ray
@@ -28,7 +34,7 @@ struct HitRecord
         Vec3(0.0f0, 0.0f0, 0.0f0),
         Vec3(0.0f0, 0.0f0, 0.0f0),
         false,
-        Material(RGB(0.0f0, 0.0f0, 0.0f0)))
+        nomaterial())
     HitRecord(t::Float32, p::Vec3, normal::Vec3, material::Material) = new(t, p, normal, true, material)
 end
 
