@@ -69,6 +69,15 @@ end
     end
 end
 
+@inline function schlick(cosine::Float32, refindex::Float32) :: Float32
+    r0 = (1.0f0 - refindex) / (1.0f0 + refindex)
+    r0 = r0 * r0
+
+    p = (1.0f0 - cosine) * (1.0f0 - cosine) * (1.0f0 - cosine) * (1.0f0 - cosine) * (1.0f0 - cosine)
+
+    r0 + (1.0f0 - r0) * p
+end
+
 @inline function scattermetal(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
     reflected = reflect(unit(direction(ray)), rec.normal)
     scattered = Ray(rec.p, reflected + rec.material.fuzz * randominunitsphere(rng))
@@ -81,17 +90,26 @@ end
     reflected = reflect(direction(ray), rec.normal)
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
 
-    outwardnormal, niovernt = if dot(direction(ray), rec.normal) > 0.0f0
-        -rec.normal, rec.material.refindex
+    cosine_part = dot(direction(ray), rec.normal) / len(direction(ray))
+
+    outwardnormal, niovernt, cosine = if dot(direction(ray), rec.normal) > 0.0f0
+        -rec.normal, rec.material.refindex, rec.material.refindex * cosine_part
     else
-        rec.normal, 1.0f0 / rec.material.refindex
+        rec.normal, 1.0f0 / rec.material.refindex, -cosine_part
     end
 
     refracted = refract(direction(ray), outwardnormal, niovernt)
-    scattered = if refracted.isrefracted
-        Ray(rec.p, refracted.ray)
+    reflectprob = if refracted.isrefracted
+        schlick(cosine, rec.material.refindex)
     else
+        1.0f0
+    end
+    isreflected = next(rng) < reflectprob
+
+    scattered = if isreflected
         Ray(rec.p, reflected)
+    else
+        Ray(rec.p, refracted.ray)
     end
 
    Scatter(scattered, attenuation, true)
