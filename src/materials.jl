@@ -11,9 +11,9 @@ struct Material
 end
 
 struct Scatter
-    scattered::Ray
+    ray::Ray
     attenuation::RGB
-    isabsorbed::Bool
+    isreflected::Bool
 end
 
 struct HitRecord

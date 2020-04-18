@@ -16,4 +16,4 @@ world = Vector{Sphere}([
 ])
 render(image, world)
 
-saveimage(image, examplefilename("sphere2"))
+saveimage(image, examplefilename("sphere3"))

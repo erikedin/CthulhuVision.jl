@@ -64,7 +64,7 @@ end
 @inline function color(r::Ray, spheres::AbstractVector{Sphere}, rng::UniformRNG) :: RGB
     maxbounces = 50
 
-    factor = 1.0f0
+    attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
     result = RGB(0.0f0, 0.0f0, 0.0f0)
     ray = r
 
@@ -72,14 +72,18 @@ end
         rec = hit(spheres, 0.001f0, typemax(Float32), ray)
 
         if rec.ishit
-            target = rec.p + rec.normal + randominunitsphere(rng)
-            ray = Ray(rec.p, target - rec.p)
-            factor *= 0.5f0
+            scattered = scatter(ray, rec, rng)
+            if !scattered.isreflected
+                break
+            end
+
+            attenuation = attenuation * scattered.attenuation
+            ray = scattered.ray
         else
             unitdirection = unit(direction(ray))
             t = 0.5f0 * (unitdirection.y + 1.0f0)
             vec = (1.0f0 - t)*Vec3(1.0f0, 1.0f0, 1.0f0) + t*Vec3(0.5f0, 0.7f0, 1.0f0)
-            result = result + factor * RGB(vec.x, vec.y, vec.z)
+            result = attenuation * RGB(vec.x, vec.y, vec.z)
             break
         end
     end
