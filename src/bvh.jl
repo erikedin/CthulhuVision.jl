@@ -62,6 +62,13 @@ struct BVHWorld
 end
 
 @inline function hit(bvhworld::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+    # The first node is always the root. Start by checking that.
+    nodes = [1]
+
+    while !isempty(nodes)
+
+    end
+
     HitRecord()
 end
 
