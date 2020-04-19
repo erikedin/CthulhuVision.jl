@@ -5,6 +5,7 @@ export Sphere, hit
 using CthulhuVision.Math
 using CthulhuVision.Materials
 using CthulhuVision.Light
+using CUDAnative
 
 struct Sphere
     center::Vec3

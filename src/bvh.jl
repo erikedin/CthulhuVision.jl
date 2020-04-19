@@ -60,6 +60,7 @@ end
     trav.len -= 1
     @inbounds trav.array[trav.len + 1]
 end
+@inline isempty(trav::TraversalList) :: Bool = trav.len == 0
 
 
 struct BVHNode
@@ -73,18 +74,45 @@ end
 @inline right(n::BVHNode) :: UInt32 = n.right & 0x7FFFFFFF
 
 function bvhbuilder(spheres::AbstractArray{Sphere}, rng::UniformRNG) :: AbstractVector{BVHNode}
-    Vector{BVHNode}()
+    Vector{BVHNode}([
+        BVHNode(
+            AABB(Vec3(-5.0f0, -3.0f0, -102.0f0), Vec3(5.0f0, 3.0f0, -98.0f0)),
+            0x80_00_00_01,
+            0x00_00_00_00,
+        )
+    ])
 end
 
 struct BVHWorld
-    bvhs::AbstractArray{BVHNode}
-    world::AbstractArray{Sphere}
+    bvhs::CuDeviceArray{BVHNode, 1, CUDAnative.AS.Global}
+    world::CuDeviceArray{Sphere, 1, CUDAnative.AS.Global}
     traversal::TraversalList
 end
 
 @inline function hit(bvh::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+    rec = HitRecord()
     add!(bvh.traversal, 0x00_00_00_01)
-    HitRecord()
+
+    while !isempty(bvh.traversal)
+        nodeindex = remove!(bvh.traversal)
+
+        @inbounds node = bvh.bvhs[nodeindex]
+        if hit(node.box, ray, tmin, tmax)
+            if isleaf(node)
+                sphereindex = left(node)
+                @inbounds sphere = bvh.world[sphereindex]
+                thisrec = hit(sphere, tmin, tmax, ray)
+                if thisrec.t < rec.t
+                    rec = thisrec
+                end
+            else
+                add!(bvh.traversal, left(node))
+                add!(bvh.traversal, right(node))
+            end
+        end
+    end
+
+    rec
 end
 
 end

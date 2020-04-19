@@ -157,21 +157,21 @@ nohits = [
     # x: -5 <= x <= 5
     # y: -2 <= y <= 2
     # z: -8 <= z <= 8
-    @testset "AABB; Test vectors that should hit" begin
-        for tv in hits
-            @testset "$(tv.description)" begin
-                @test hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
-            end
-        end
-    end
+    # @testset "AABB; Test vectors that should hit" begin
+    #     for tv in hits
+    #         @testset "$(tv.description)" begin
+    #             @test hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
+    #         end
+    #     end
+    # end
 
-    @testset "AABB; Test vectors that should not hit" begin
-        for tv in nohits
-            @testset "$(tv.description)" begin
-                @test !hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
-            end
-        end
-    end
+    # @testset "AABB; Test vectors that should not hit" begin
+    #     for tv in nohits
+    #         @testset "$(tv.description)" begin
+    #             @test !hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
+    #         end
+    #     end
+    # end
 end
 
 function ishit_gpu(aabb, ray, tmin, tmax, result)
@@ -251,12 +251,14 @@ end
         rng = uniformfromindex(1)
         material = dielectric(1.5f0)
 
-        spheres = [
-            Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material)
-            for x = -500.0f0:100.0f0:500.0f0,
-                y = -500.0f0:100.0f0:500.0f0,
-                z = [-10000.0f0, 10000.0f0]
-        ]
+        spheres = Vector{Sphere}()
+        for x = -500.0f0:100.0f0:500.0f0
+            for y = -500.0f0:100.0f0:500.0f0
+                for z in [-10000.0f0, 10000.0f0]
+                    push!(spheres, Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material))
+                end
+            end
+        end
         # TODO More spheres here
 
         bvh = bvhbuilder(spheres, rng)
@@ -281,48 +283,52 @@ end
         end
     end
     
-    @testset "Regular squares of spheres accelerated by BVH: No hits" begin
-        # 10 000 units away in all dimensions there are squares of 11x11 spheres,
-        # regularly spaces with centers 100 units between. The radius is 1 for each sphere.
-        # For z = 10 000, for instance, the spheres are at
-        # x: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
-        # y: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
+    # @testset "Regular squares of spheres accelerated by BVH: No hits" begin
+    #     # 10 000 units away in all dimensions there are squares of 11x11 spheres,
+    #     # regularly spaces with centers 100 units between. The radius is 1 for each sphere.
+    #     # For z = 10 000, for instance, the spheres are at
+    #     # x: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
+    #     # y: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
         
-        # Aiming a Ray from the origin to the center of each sphere should be a
-        # hit.
+    #     # Aiming a Ray from the origin to the center of each sphere should be a
+    #     # hit.
 
 
-        rng = uniformfromindex(1)
-        material = dielectric(1.5f0)
+    #     rng = uniformfromindex(1)
+    #     material = dielectric(1.5f0)
 
-        spheres = [
-            Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material)
-            for x = -500.0f0:100.0f0:500.0f0,
-                y = -500.0f0:100.0f0:500.0f0,
-                z = [-10000.0f0, 10000.0f0]
-        ]
-        offsetxy = Vec3(5.0f0, 5.0f0, 0.0f0)
-        targets = [s.center + offsetxy for s in spheres]
-
-        bvh = bvhbuilder(spheres, rng)
-
-        threads = 256
-        blocks = ceil(Int, length(spheres) / threads)
-
-        bvh_d = CuArray{BVHNode}(bvh)
-        spheres_d = CuArray{Sphere}(spheres)
-        targets_d = CuArray{Vec3}(targets)
-        bvhtraversal = CuArray{UInt32}(undef, length(spheres))
-        ishit_d = CuArray{Bool}(undef, length(spheres))
+    #     spheres = Vector{Sphere}()
+    #         Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material)
         
-        CUDAnative.@sync begin
-            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres, targets_d, bvhtraversal, ishit_d)
-        end
+    #     for x = -500.0f0:100.0f0:500.0f0
+    #         for y = -500.0f0:100.0f0:500.0f0
+    #             for z = [-10000.0f0, 10000.0f0]
+    #                 push!(spheres, Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material))
+    #             end
+    #         end
+    #     end
+    #     offsetxy = Vec3(5.0f0, 5.0f0, 0.0f0)
+    #     targets = [s.center + offsetxy for s in spheres]
 
-        ishit = Vector{Bool}(ishit_d)
+    #     bvh = bvhbuilder(spheres, rng)
 
-        for b in ishit
-            @test !b
-        end
-    end
+    #     threads = 256
+    #     blocks = ceil(Int, length(spheres) / threads)
+
+    #     bvh_d = CuArray{BVHNode}(bvh)
+    #     spheres_d = CuArray{Sphere}(spheres)
+    #     targets_d = CuArray{Vec3}(targets)
+    #     bvhtraversal = CuArray{UInt32}(undef, length(spheres))
+    #     ishit_d = CuArray{Bool}(undef, length(spheres))
+        
+    #     CUDAnative.@sync begin
+    #         @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres, targets_d, bvhtraversal, ishit_d)
+    #     end
+
+    #     ishit = Vector{Bool}(ishit_d)
+
+    #     for b in ishit
+    #         @test !b
+    #     end
+    # end
 end
