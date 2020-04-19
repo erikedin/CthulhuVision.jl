@@ -1,6 +1,6 @@
 module BVH
 
-export AABB, hit, bvhbuilder, BVHNode
+export AABB, hit, bvhbuilder, BVHNode, BVHWorld
 
 using CthulhuVision.Light
 using CthulhuVision.Math
@@ -43,14 +43,25 @@ end
 end
 
 struct BVHNode
-
+    box::AABB
+    left::UInt32
+    right::UInt32
 end
+
+@inline isleaf(n::BVHNode) :: Bool = n.left & 0x80000000 != 0
+@inline left(n::BVHNode) :: UInt32 = n.left & 0x7FFFFFFF
+@inline right(n::BVHNode) :: UInt32 = n.right & 0x7FFFFFFF
 
 function bvhbuilder(spheres::AbstractArray{Sphere}, rng::UniformRNG) :: AbstractVector{BVHNode}
     Vector{BVHNode}()
 end
 
-@inline function hit(bvhs::AbstractVector{BVHNode}, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+struct BVHWorld
+    bvhs::AbstractArray{BVHNode}
+    world::AbstractArray{Sphere}
+end
+
+@inline function hit(bvhworld::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
     HitRecord()
 end
 

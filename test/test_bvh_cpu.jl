@@ -219,15 +219,17 @@ end
 
 end
 
-function bvhhit_gpu(bvh, targets, ishit)
+function bvhhit_gpu(bvh, spheres, targets, ishit)
     x = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     n = length(targets)
     o = Vec3(0.0f0, 0.0f0, 0.0f0)
+
+    bvhworld = BVHWorld(bvh, spheres)
     
     if x <= n
         target = targets[x]
         ray = Ray(o, unit(target))
-        rec = hit(bvh, 0.0f0, typemax(Float32), ray)
+        rec = hit(bvhworld, 0.0f0, typemax(Float32), ray)
         ishit[x] = rec.ishit
     end
     nothing
@@ -262,11 +264,12 @@ end
         blocks = ceil(Int, length(spheres) / threads)
 
         bvh_d = CuArray{BVHNode}(bvh)
+        spheres_d = CuArray{Sphere}(spheres)
         targets_d = CuArray{Vec3}([s.center for s in spheres])
         ishit_d = CuArray{Bool}(undef, length(spheres))
         
         CUDAnative.@sync begin
-            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, targets_d, ishit_d)
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres_d, targets_d, ishit_d)
         end
 
         ishit = Vector{Bool}(ishit_d)
@@ -305,11 +308,12 @@ end
         blocks = ceil(Int, length(spheres) / threads)
 
         bvh_d = CuArray{BVHNode}(bvh)
+        spheres_d = CuArray{Sphere}(spheres)
         targets_d = CuArray{Vec3}(targets)
         ishit_d = CuArray{Bool}(undef, length(spheres))
         
         CUDAnative.@sync begin
-            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, targets_d, ishit_d)
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres, targets_d, ishit_d)
         end
 
         ishit = Vector{Bool}(ishit_d)
