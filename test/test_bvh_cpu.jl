@@ -1,8 +1,14 @@
 using Test
 
+using CUDAnative
+using CuArrays
+
 using CthulhuVision.BVH
 using CthulhuVision.Light
 using CthulhuVision.Math
+using CthulhuVision.Random
+using CthulhuVision.Materials
+using CthulhuVision.Spheres
 
 struct TV
     aabb::AABB
@@ -208,6 +214,108 @@ end
 
                 @test !ishit
             end
+        end
+    end
+
+end
+
+function bvhhit_gpu(bvh, targets, ishit)
+    x = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+    n = length(targets)
+    o = Vec3(0.0f0, 0.0f0, 0.0f0)
+    
+    if x <= n
+        target = targets[x]
+        ray = Ray(o, unit(target))
+        rec = hit(bvh, 0.0f0, typemax(Float32), ray)
+        ishit[x] = rec.ishit
+    end
+    nothing
+end
+
+@testset "BVH CPU and GPU         " begin
+    @testset "Regular squares of spheres accelerated by BVH: Hits" begin
+        # 10 000 units away in all dimensions there are squares of 11x11 spheres,
+        # regularly spaces with centers 100 units between. The radius is 1 for each sphere.
+        # For z = 10 000, for instance, the spheres are at
+        # x: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
+        # y: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
+        
+        # Aiming a Ray from the origin to the center of each sphere should be a
+        # hit.
+
+
+        rng = uniformfromindex(1)
+        material = dielectric(1.5f0)
+
+        spheres = [
+            Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material)
+            for x = -500.0f0:100.0f0:500.0f0,
+                y = -500.0f0:100.0f0:500.0f0,
+                z = [-10000.0f0, 10000.0f0]
+        ]
+        # TODO More spheres here
+
+        bvh = bvhbuilder(spheres, rng)
+
+        threads = 256
+        blocks = ceil(Int, length(spheres) / threads)
+
+        bvh_d = CuArray{BVHNode}(bvh)
+        targets_d = CuArray{Vec3}([s.center for s in spheres])
+        ishit_d = CuArray{Bool}(undef, length(spheres))
+        
+        CUDAnative.@sync begin
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, targets_d, ishit_d)
+        end
+
+        ishit = Vector{Bool}(ishit_d)
+
+        for b in ishit
+            @test b
+        end
+    end
+    
+    @testset "Regular squares of spheres accelerated by BVH: No hits" begin
+        # 10 000 units away in all dimensions there are squares of 11x11 spheres,
+        # regularly spaces with centers 100 units between. The radius is 1 for each sphere.
+        # For z = 10 000, for instance, the spheres are at
+        # x: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
+        # y: -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500
+        
+        # Aiming a Ray from the origin to the center of each sphere should be a
+        # hit.
+
+
+        rng = uniformfromindex(1)
+        material = dielectric(1.5f0)
+
+        spheres = [
+            Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material)
+            for x = -500.0f0:100.0f0:500.0f0,
+                y = -500.0f0:100.0f0:500.0f0,
+                z = [-10000.0f0, 10000.0f0]
+        ]
+        offsetxy = Vec3(5.0f0, 5.0f0, 0.0f0)
+        targets = [s.center + offsetxy for s in spheres]
+
+        bvh = bvhbuilder(spheres, rng)
+
+        threads = 256
+        blocks = ceil(Int, length(spheres) / threads)
+
+        bvh_d = CuArray{BVHNode}(bvh)
+        targets_d = CuArray{Vec3}(targets)
+        ishit_d = CuArray{Bool}(undef, length(spheres))
+        
+        CUDAnative.@sync begin
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, targets_d, ishit_d)
+        end
+
+        ishit = Vector{Bool}(ishit_d)
+
+        for b in ishit
+            @test !b
         end
     end
 end

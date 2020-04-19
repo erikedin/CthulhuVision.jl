@@ -4,6 +4,7 @@ using CthulhuVision.Light
 using CthulhuVision.Materials
 using CthulhuVision.Rendering
 using CthulhuVision.Camera
+using CthulhuVision.Spheres
 using CthulhuVision.Random
 
 width = 800

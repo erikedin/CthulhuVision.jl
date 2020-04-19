@@ -1,9 +1,13 @@
 module BVH
 
-export AABB, hit
+export AABB, hit, bvhbuilder, BVHNode
 
 using CthulhuVision.Light
 using CthulhuVision.Math
+using CthulhuVision.Random
+using CthulhuVision.Materials
+using CthulhuVision.Spheres
+import CthulhuVision.Spheres: hit
 
 struct AABB
     min::Vec3
@@ -36,6 +40,18 @@ end
     t1 = min(tx1, ty1, tz1)
 
     tmin < t0 < t1 < tmax
+end
+
+struct BVHNode
+
+end
+
+function bvhbuilder(spheres::AbstractArray{Sphere}, rng::UniformRNG) :: AbstractVector{BVHNode}
+    Vector{BVHNode}()
+end
+
+@inline function hit(bvhs::AbstractVector{BVHNode}, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+    HitRecord()
 end
 
 end
