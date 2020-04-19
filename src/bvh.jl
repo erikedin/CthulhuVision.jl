@@ -1,6 +1,9 @@
 module BVH
 
-export AABB, hit, bvhbuilder, BVHNode, BVHWorld
+export AABB, hit, bvhbuilder, BVHNode, BVHWorld, TraversalList
+
+using CuArrays
+using CUDAnative
 
 using CthulhuVision.Light
 using CthulhuVision.Math
@@ -42,6 +45,23 @@ end
     tmin < t0 < t1 < tmax
 end
 
+mutable struct TraversalList
+    array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}
+    len::UInt32
+
+    TraversalList(array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}) = new(array, 0)
+end
+
+@inline function add!(trav::TraversalList, v::UInt32)
+    trav.len += 1
+    @inbounds trav.array[trav.len] = v
+end
+@inline function remove!(trav::TraversalList) :: UInt32
+    trav.len -= 1
+    @inbounds trav.array[trav.len + 1]
+end
+
+
 struct BVHNode
     box::AABB
     left::UInt32
@@ -59,16 +79,11 @@ end
 struct BVHWorld
     bvhs::AbstractArray{BVHNode}
     world::AbstractArray{Sphere}
+    traversal::TraversalList
 end
 
-@inline function hit(bvhworld::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
-    # The first node is always the root. Start by checking that.
-    nodes = [1]
-
-    while !isempty(nodes)
-
-    end
-
+@inline function hit(bvh::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+    add!(bvh.traversal, 0x00_00_00_01)
     HitRecord()
 end
 

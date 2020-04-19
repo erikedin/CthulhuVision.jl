@@ -219,12 +219,13 @@ end
 
 end
 
-function bvhhit_gpu(bvh, spheres, targets, ishit)
+function bvhhit_gpu(bvh, spheres, targets, bvhtraversal, ishit)
     x = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     n = length(targets)
     o = Vec3(0.0f0, 0.0f0, 0.0f0)
 
-    bvhworld = BVHWorld(bvh, spheres)
+    trav = TraversalList(bvhtraversal)
+    bvhworld = BVHWorld(bvh, spheres, trav)
     
     if x <= n
         target = targets[x]
@@ -266,10 +267,11 @@ end
         bvh_d = CuArray{BVHNode}(bvh)
         spheres_d = CuArray{Sphere}(spheres)
         targets_d = CuArray{Vec3}([s.center for s in spheres])
+        bvhtraversal = CuArray{UInt32}(undef, length(spheres))
         ishit_d = CuArray{Bool}(undef, length(spheres))
         
         CUDAnative.@sync begin
-            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres_d, targets_d, ishit_d)
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres_d, targets_d, bvhtraversal, ishit_d)
         end
 
         ishit = Vector{Bool}(ishit_d)
@@ -310,10 +312,11 @@ end
         bvh_d = CuArray{BVHNode}(bvh)
         spheres_d = CuArray{Sphere}(spheres)
         targets_d = CuArray{Vec3}(targets)
+        bvhtraversal = CuArray{UInt32}(undef, length(spheres))
         ishit_d = CuArray{Bool}(undef, length(spheres))
         
         CUDAnative.@sync begin
-            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres, targets_d, ishit_d)
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres, targets_d, bvhtraversal, ishit_d)
         end
 
         ishit = Vector{Bool}(ishit_d)
