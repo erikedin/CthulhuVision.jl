@@ -6,6 +6,7 @@ include("light.jl")
 include("image.jl")
 include("materials.jl")
 include("camera.jl")
+include("bvh.jl")
 include("rendering.jl")
 
 end

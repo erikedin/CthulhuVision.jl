@@ -1,6 +1,6 @@
 module Math
 
-export Vec3, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost
+export Vec3, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost
 
 using CUDAnative
 using CthulhuVision.Random
@@ -32,6 +32,11 @@ end
 
 @inline function unit(a::Vec3) :: Vec3
     l = len(a)
+    a / l
+end
+
+@inline function unithost(a::Vec3) :: Vec3
+    l = lenhost(a)
     a / l
 end
 
