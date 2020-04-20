@@ -113,18 +113,85 @@ struct BVHNode
     right::UInt32
 end
 
+@inline function leafnode(sphere::Sphere, index::UInt32) :: BVHNode
+    leafindex = 0x8000_0000 | index
+    box = boundingbox(sphere)
+
+    BVHNode(box, leafindex, 0x0000_0000)
+end
+
+@inline function parentnode(leftindex::UInt32, left::BVHNode, rightindex::UInt32, right::BVHNode) :: BVHNode
+    box = surroundingbox(left.box, right.box)
+    left = 0x7FFF_0000 & leftindex
+    right = 0x7FFF_0000 & rightindex
+
+    BVHNode(box, left, right)
+end
+
 @inline isleaf(n::BVHNode) :: Bool = n.left & 0x80000000 != 0
 @inline left(n::BVHNode) :: UInt32 = n.left & 0x7FFFFFFF
 @inline right(n::BVHNode) :: UInt32 = n.right & 0x7FFFFFFF
 
+function allocatebvhnode(nodes::Vector{BVHNode}) :: Int
+    n = BVHNode(
+        AABB(Vec3(0.0f0, 0.0f0, 0.0f0), Vec3(0.0f0, 0.0f0, 0.0f0)),
+        0,
+        0
+    )
+    push!(nodes, n)
+    length(nodes)
+end
+
+function makebvhnode(spheres::Vector{Tuple{UInt32, Sphere}}, start::UInt32, last::UInt32, rng::UniformRNG, nodes::Vector{BVHNode}) :: UInt32
+    println("makebvhnode: # spheres = $(length(spheres)), start = $(start), last = $(last), # nodes = $(length(nodes))")
+    axischoice = next(rng)
+    byaxis = if axischoice < 0.33f0
+        s -> s[2].center.x - s[2].radius
+    elseif axischoice < 0.66f0
+        s -> s[2].center.y - s[2].radius
+    else
+        s -> s[2].center.z - s[2].radius
+    end
+
+    thisindex = allocatebvhnode(nodes)
+
+    isleaf = start == last
+    if isleaf
+        sphereindex = spheres[start][1]
+        sphere = spheres[start][2]
+        node = leafnode(sphere, sphereindex)
+        nodes[thisindex] = node
+    else
+        sphereview = view(spheres, start:last)
+        sort!(sphereview, by=byaxis)
+
+        # There's two or more left.
+        n = last - start + 1
+        leftlast = UInt32(start + ceil(UInt32, n / 2) - 1)
+        rightstart = UInt32(leftlast + 1)
+
+        leftindex = makebvhnode(spheres, start, leftlast, rng, nodes)
+        leftnode = nodes[leftindex]
+        rightindex = makebvhnode(spheres, rightstart, last, rng, nodes)
+        rightnode = nodes[rightindex]
+
+        node = parentnode(leftindex, leftnode, rightindex, rightnode)
+    end
+
+    thisindex
+end
+
 function bvhbuilder(spheres::AbstractArray{Sphere}, rng::UniformRNG) :: AbstractVector{BVHNode}
-    Vector{BVHNode}([
-        BVHNode(
-            AABB(Vec3(-5.0f0, -3.0f0, -102.0f0), Vec3(5.0f0, 3.0f0, -98.0f0)),
-            0x80_00_00_01,
-            0x00_00_00_00,
-        )
-    ])
+    nodes = Vector{BVHNode}()
+
+    sphereswithindex = Vector{Tuple{UInt32, Sphere}}(
+        [Tuple{UInt32, Sphere}((UInt32(i), s))
+         for (i, s) in enumerate(spheres)]
+    )
+
+    makebvhnode(sphereswithindex, UInt32(1), UInt32(length(sphereswithindex)), rng, nodes)
+
+    nodes
 end
 
 struct BVHWorld

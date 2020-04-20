@@ -151,28 +151,28 @@ nohits = [
     ),
 ]
 
-@testset "BVH CPU                 " begin
-    # A standard AABB is used for most tests:
-    # center at 0.0f0, 0.0f0, 100.0f0
-    # x: -5 <= x <= 5
-    # y: -2 <= y <= 2
-    # z: -8 <= z <= 8
-    # @testset "AABB; Test vectors that should hit" begin
-    #     for tv in hits
-    #         @testset "$(tv.description)" begin
-    #             @test hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
-    #         end
-    #     end
-    # end
+#@testset "BVH CPU                 " begin
+    ## A standard AABB is used for most tests:
+    ## center at 0.0f0, 0.0f0, 100.0f0
+    ## x: -5 <= x <= 5
+    ## y: -2 <= y <= 2
+    ## z: -8 <= z <= 8
+    #@testset "AABB; Test vectors that should hit" begin
+        #for tv in hits
+            #@testset "$(tv.description)" begin
+                #@test hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
+            #end
+        #end
+    #end
 
-    # @testset "AABB; Test vectors that should not hit" begin
-    #     for tv in nohits
-    #         @testset "$(tv.description)" begin
-    #             @test !hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
-    #         end
-    #     end
-    # end
-end
+    #@testset "AABB; Test vectors that should not hit" begin
+        #for tv in nohits
+            #@testset "$(tv.description)" begin
+                #@test !hit(tv.aabb, tv.ray, tv.tmin, tv.tmax)
+            #end
+        #end
+    #end
+#end
 
 function ishit_gpu(aabb, ray, tmin, tmax, result)
     x = threadIdx().x
