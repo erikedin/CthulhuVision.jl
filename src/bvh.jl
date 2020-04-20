@@ -45,6 +45,44 @@ end
     tmin < t0 < t1 < tmax
 end
 
+@inline function boundingbox(sphere::Sphere) :: AABB
+    r = Vec3(sphere.radius, sphere.radius, sphere.radius)
+    AABB(sphere.center - r, sphere.center + r)
+end
+
+@inline function surroundingbox(c::AABB, d::AABB) :: AABB
+    small = Vec3(
+        min(c.min.x, d.min.x),
+        min(c.min.y, d.min.y),
+        min(c.min.z, d.min.z))
+
+    big = Vec3(
+        max(c.max.x, d.max.x),
+        max(c.max.y, d.max.y),
+        max(c.max.z, d.max.z),
+    )
+
+    AABB(small, big)
+end
+
+@inline function boundingbox(spheres::AbstractArray{Sphere}) :: AABB
+    box = AABB(
+        Vec3(Inf32, Inf32, Inf32),
+        Vec3(-Inf32, -Inf32, -Inf32)
+    )
+
+    for sphere in spheres
+        box = surroundingbox(box, boundingbox(sphere))
+    end
+
+    box
+end
+
+#
+# TraversalList is a wrapper around a fixed size array.
+# It keeps track of which nodes to visit in the BVH structure.
+#
+
 mutable struct TraversalList
     array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}
     len::UInt32
@@ -62,6 +100,12 @@ end
 end
 @inline isempty(trav::TraversalList) :: Bool = trav.len == 0
 
+#
+# BVHNode is a node in the tree structure we build to accelerate
+# the hit function.
+# It keeps track of a bounding box, which contains all its children
+# and a pointer to the left and right child node.
+#
 
 struct BVHNode
     box::AABB
