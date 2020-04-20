@@ -227,9 +227,9 @@ function bvhhit_gpu(bvh, spheres, targets, bvhtraversal, ishit)
     trav = TraversalList(bvhtraversal)
     bvhworld = BVHWorld(bvh, spheres, trav)
     
-    if x <= n
+    if x <= 1
         target = targets[x]
-        ray = Ray(o, unit(target))
+        ray = Ray(o, target)
         rec = hit(bvhworld, 0.0f0, typemax(Float32), ray)
         ishit[x] = rec.ishit
     end
@@ -252,10 +252,10 @@ end
         material = dielectric(1.5f0)
 
         spheres = Vector{Sphere}()
-        for x = -500.0f0:100.0f0:500.0f0
-            for y = -500.0f0:100.0f0:500.0f0
-                for z in [-10000.0f0, 10000.0f0]
-                    push!(spheres, Sphere(Vec3(x, y, 10000.0f0), 1.0f0, material))
+        for x = -500.0f0:500.0f0:500.0f0
+            for y = -500.0f0:500.0f0:500.0f0
+                for z in [-10000.0f0]
+                    push!(spheres, Sphere(Vec3(x, y, z), 1.0f0, material))
                 end
             end
         end
@@ -278,8 +278,10 @@ end
 
         ishit = Vector{Bool}(ishit_d)
 
-        for b in ishit
-            @test b
+        for (i, b) in enumerate(ishit)
+            @testset "Sphere $(i): Is hit" begin
+                @test b
+            end
         end
     end
     

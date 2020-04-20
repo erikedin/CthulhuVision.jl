@@ -1,6 +1,6 @@
 module BVH
 
-export AABB, hit, bvhbuilder, BVHNode, BVHWorld, TraversalList
+export AABB, hit, bvhbuilder, BVHNode, BVHWorld, TraversalList, isleaf, left
 
 using CuArrays
 using CUDAnative
@@ -122,8 +122,8 @@ end
 
 @inline function parentnode(leftindex::UInt32, left::BVHNode, rightindex::UInt32, right::BVHNode) :: BVHNode
     box = surroundingbox(left.box, right.box)
-    left = 0x7FFF_0000 & leftindex
-    right = 0x7FFF_0000 & rightindex
+    left = 0x7FFF_FFFF & leftindex
+    right = 0x7FFF_FFFF & rightindex
 
     BVHNode(box, left, right)
 end
@@ -134,7 +134,7 @@ end
 
 function allocatebvhnode(nodes::Vector{BVHNode}) :: Int
     n = BVHNode(
-        AABB(Vec3(0.0f0, 0.0f0, 0.0f0), Vec3(0.0f0, 0.0f0, 0.0f0)),
+        AABB(Vec3(-1.0f0, -2.0f0, -3.0f0), Vec3(0.0f0, 0.0f0, 0.0f0)),
         0,
         0
     )
@@ -176,6 +176,7 @@ function makebvhnode(spheres::Vector{Tuple{UInt32, Sphere}}, start::UInt32, last
         rightnode = nodes[rightindex]
 
         node = parentnode(leftindex, leftnode, rightindex, rightnode)
+        nodes[thisindex] = node
     end
 
     thisindex
@@ -201,26 +202,39 @@ struct BVHWorld
 end
 
 @inline function hit(bvh::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+    @cuprintln("hit called: Ray origin: ($(ray.a.x) $(ray.a.y) $(ray.a.z)), direction: ($(ray.b.x) $(ray.b.y) $(ray.b.z))")
     rec = HitRecord()
     add!(bvh.traversal, 0x00_00_00_01)
 
     while !isempty(bvh.traversal)
         nodeindex = remove!(bvh.traversal)
+        @cuprintln("Got $(nodeindex)")
 
         @inbounds node = bvh.bvhs[nodeindex]
+        @cuprintln("Box min: $(node.box.min.x) $(node.box.min.y) $(node.box.min.z) Box max: $(node.box.max.x) $(node.box.max.y) $(node.box.max.z)")
+        #@cuprintln("Node $(nodeindex) = $(node)")
         if hit(node.box, ray, tmin, tmax)
+            @cuprintln("Ray hit box $(nodeindex)")
             if isleaf(node)
                 sphereindex = left(node)
+                @cuprintln("Node $(nodeindex) is a leaf: sphereindex = $(sphereindex)")
                 @inbounds sphere = bvh.world[sphereindex]
+                #@cuprintln("Sphere $(sphereindex) = $(sphere)")
                 thisrec = hit(sphere, tmin, tmax, ray)
                 if thisrec.t < rec.t
+                    @cuprintln("$(sphereindex) was a hit")
                     rec = thisrec
+                else
+                    @cuprintln("$(sphereindex) was not a hit")
                 end
             else
+                @cuprintln("Node $(nodeindex) is not a leaf: $(left(node)) $(right(node))")
                 add!(bvh.traversal, left(node))
                 add!(bvh.traversal, right(node))
             end
         end
+
+        @cuprintln("")
     end
 
     rec
