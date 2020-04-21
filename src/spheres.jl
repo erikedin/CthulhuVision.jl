@@ -14,8 +14,6 @@ struct Sphere
 end
 
 @inline function hit(sphere::Sphere, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
-    @cuprintln("Called sphere hit: Sphere center = ($(sphere.center.x), $(sphere.center.y), $(sphere.center.z)), radius = $(sphere.radius)")
-    @cuprintln("tmin = $tmin, tmax = $tmax, ray = ($(ray.a.x), $(ray.a.y), $(ray.a.z)) -> ($(ray.b.x), $(ray.b.y), $(ray.b.z))")
     oc = origin(ray) - sphere.center
     a = dot(direction(ray), direction(ray))
     b = dot(oc, direction(ray))

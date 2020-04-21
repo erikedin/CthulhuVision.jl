@@ -11,8 +11,9 @@ using CthulhuVision.Image
 using CthulhuVision.Camera
 using CthulhuVision.Materials
 using CthulhuVision.Spheres
+using CthulhuVision.BVH
 
-@inline function color(r::Ray, spheres::AbstractVector{Sphere}, rng::UniformRNG) :: RGB
+@inline function color(r::Ray, world::BVHWorld, rng::UniformRNG) :: RGB
     maxbounces = 50
 
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
@@ -20,7 +21,7 @@ using CthulhuVision.Spheres
     ray = r
 
     for i = 1:maxbounces
-        rec = hit(spheres, 0.001f0, typemax(Float32), ray)
+        rec = hit(world, 0.001f0, typemax(Float32), ray)
 
         if rec.ishit
             scattered = scatter(ray, rec, rng)
@@ -47,9 +48,15 @@ end
     uniformfromindex(index)
 end
 
-function gpurender(a, camera, width, height, world)
+function gpurender(a, camera, width, height, world, bvh, traversal_thread_size)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+
+    offset = UInt32(((threadIdx().x - 1) + (threadIdx().y - 1) * blockDim().x) * traversal_thread_size)
+
+    shmem = @cuDynamicSharedMem(UInt32, traversal_thread_size * blockDim().x * blockDim().y)
+    trav = TraversalList(shmem, offset)
+    bvhworld = BVHWorld(bvh, world, trav)
 
     rng = makeprng()
 
@@ -64,7 +71,7 @@ function gpurender(a, camera, width, height, world)
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
             ray = getray(camera, u, v, rng)
-            col = col + color(ray, world, rng)
+            col = col + color(ray, bvhworld, rng)
         end
 
         col /= Float32(nsamples)
@@ -82,9 +89,18 @@ function render(image::PPM, camera, world::AbstractVector{Sphere})
     world_d = CuArray{Sphere}(world)
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
+    threads = (16, 16)
+
+    traversal_thread_size = 40
+    shmem = threads[1] * threads[2] * sizeof(Float32) * traversal_thread_size
+
+    rng = uniformfromindex(0)
+    bvh = bvhbuilder(world, rng)
+
+    bvh_d = CuArray{BVHNode}(bvh)
 
     CuArrays.@sync begin
-        @cuda threads=(16, 16) blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d)
+        @cuda threads=threads blocks=blocks shmem=shmem gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d, bvh_d, UInt32(traversal_thread_size))
     end
 
     for y = 0:image.dimension.height-1, x = 0:image.dimension.width-1

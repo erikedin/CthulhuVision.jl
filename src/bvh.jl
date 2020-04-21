@@ -84,11 +84,11 @@ end
 #
 
 mutable struct TraversalList
-    array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}
+    array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Shared}
     offset::UInt32
     len::UInt32
 
-    TraversalList(array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}, offset::UInt32) = new(array, offset, 0)
+    TraversalList(array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Shared}, offset::UInt32) = new(array, offset, 0)
 end
 
 @inline function add!(trav::TraversalList, v::UInt32)
@@ -144,7 +144,6 @@ function allocatebvhnode(nodes::Vector{BVHNode}) :: Int
 end
 
 function makebvhnode(spheres::Vector{Tuple{UInt32, Sphere}}, start::UInt32, last::UInt32, rng::UniformRNG, nodes::Vector{BVHNode}) :: UInt32
-    #println("makebvhnode: # spheres = $(length(spheres)), start = $(start), last = $(last), # nodes = $(length(nodes))")
     axischoice = next(rng)
     byaxis = if axischoice < 0.33f0
         s -> s[2].center.x - s[2].radius
@@ -203,45 +202,26 @@ struct BVHWorld
 end
 
 @inline function hit(bvh::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
-    @cuprintln("hit called: Ray origin: ($(ray.a.x) $(ray.a.y) $(ray.a.z)), direction: ($(ray.b.x) $(ray.b.y) $(ray.b.z)), tmin = $tmin, tmax = $tmax")
     rec = HitRecord()
     add!(bvh.traversal, 0x00_00_00_01)
 
     while !isempty(bvh.traversal)
         nodeindex = remove!(bvh.traversal)
-        @cuprintln("Got $(nodeindex)")
-        @cuprintln("Current rec.t = $(rec.t)")
 
         @inbounds node = bvh.bvhs[nodeindex]
-        @cuprintln("Box min: $(node.box.min.x) $(node.box.min.y) $(node.box.min.z) Box max: $(node.box.max.x) $(node.box.max.y) $(node.box.max.z)")
-        #@cuprintln("Node $(nodeindex) = $(node)")
         if hit(node.box, ray, tmin, tmax)
-            @cuprintln("Ray hit box $(nodeindex)")
             if isleaf(node)
                 sphereindex = left(node)
-                @cuprintln("Node $(nodeindex) is a leaf: sphereindex = $(sphereindex)")
                 @inbounds sphere = bvh.world[sphereindex]
-                #@cuprintln("Sphere $(sphereindex) = $(sphere)")
-                @cuprintln("Sphere $(sphereindex): center = ($(sphere.center.x), $(sphere.center.y), $(sphere.center.z)), radius = $(sphere.radius)")
-                @cuprintln("tmin = $tmin, tmax = $tmax")
                 thisrec = hit(sphere, tmin, tmax, ray)
-                if thisrec.ishit
-                    @cuprintln("$(sphereindex) was a hit at t = $(thisrec.t)")
-                else
-                    @cuprintln("$(sphereindex) was not a hit")
-                end
                 if thisrec.t < rec.t
-                    @cuprintln("$(sphereindex) was a closer hit than $(rec.t)")
                     rec = thisrec
                 end
             else
-                @cuprintln("Node $(nodeindex) is not a leaf: $(left(node)) $(right(node))")
                 add!(bvh.traversal, left(node))
                 add!(bvh.traversal, right(node))
             end
         end
-
-        @cuprintln("")
     end
 
     rec
