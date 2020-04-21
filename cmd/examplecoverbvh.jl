@@ -7,8 +7,8 @@ using CthulhuVision.Camera
 using CthulhuVision.Spheres
 using CthulhuVision.Random
 
-width = 3840
-height = 2160
+width = 3840*4
+height = 2160*4
 image = PPM(Dimension(width, height))
 
 brown = lambertian(RGB(0.4f0, 0.2f0, 0.1f0))
@@ -26,18 +26,21 @@ rng = uniformfromindex(0)
 
 for a = -11:10
     for b = -11:10
-        choosematerial = next(rng)
-        center = Vec3(Float32(a) + 0.9f0 * next(rng), 0.2f0, b + 0.9f0 * next(rng))
-        if lenhost(center - Vec3(4.0f0, 0.2f0, 0.0f0)) > 0.9f0
-            material = if choosematerial < 0.8
-                lambertian(RGB(next(rng) * next(rng), next(rng) * next(rng), next(rng) * next(rng)))
-            elseif choosematerial < 0.95
-                metal(RGB(0.5f0 * (1.0f0 + next(rng)), 0.5f0 * (1.0f0 + next(rng)), 0.5f0 * (1.0f0 + next(rng))))
-            else
-                dielectric(1.5f0)
+        for c = 1:1000
+            radius = 0.002f0
+            choosematerial = next(rng)
+            center = Vec3(Float32(a) + next(rng), radius, b + next(rng))
+            if lenhost(center - Vec3(4.0f0, 0.2f0, 0.0f0)) > 0.2f0
+                material = if choosematerial < 0.8
+                    lambertian(RGB(next(rng) * next(rng), next(rng) * next(rng), next(rng) * next(rng)))
+                elseif choosematerial < 0.95
+                    metal(RGB(0.5f0 * (1.0f0 + next(rng)), 0.5f0 * (1.0f0 + next(rng)), 0.5f0 * (1.0f0 + next(rng))))
+                else
+                    dielectric(1.5f0)
+                end
+                sphere = Sphere(center, radius, material)
+                push!(world, sphere)
             end
-            sphere = Sphere(center, 0.2f0, material)
-            push!(world, sphere)
         end
     end
 end
