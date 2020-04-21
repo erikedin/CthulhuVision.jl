@@ -13,7 +13,7 @@ using CthulhuVision.Materials
 using CthulhuVision.Spheres
 using CthulhuVision.BVH
 
-@inline function color(r::Ray, world::BVHWorld, rng::UniformRNG) :: RGB
+@inline function color(r::Ray, world, rng::UniformRNG) :: RGB
     maxbounces = 50
 
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
@@ -103,9 +103,9 @@ function render(image::PPM, camera, world::AbstractVector{Sphere})
         @cuda threads=threads blocks=blocks shmem=shmem gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d, bvh_d, UInt32(traversal_thread_size))
     end
 
+    cpuarray = Array{RGB, 2}(pixels)
     for y = 0:image.dimension.height-1, x = 0:image.dimension.width-1
         px = Pixel(x, y)
-        cpuarray = Array(pixels)
         c = cpuarray[y + 1, x + 1]
 
         pixel(image, px, c)

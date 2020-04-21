@@ -7,8 +7,8 @@ using CthulhuVision.Camera
 using CthulhuVision.Spheres
 using CthulhuVision.Random
 
-width = 400
-height = 200
+width = 3840
+height = 2160
 image = PPM(Dimension(width, height))
 
 brown = lambertian(RGB(0.4f0, 0.2f0, 0.1f0))
