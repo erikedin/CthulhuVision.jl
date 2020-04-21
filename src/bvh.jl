@@ -39,10 +39,10 @@ end
         tz0, tz1 = tz1, tz0
     end
 
-    t0 = max(tx0, ty0, tz0)
-    t1 = min(tx1, ty1, tz1)
+    t0 = max(tx0, ty0, tz0, tmin)
+    t1 = min(tx1, ty1, tz1, tmax)
 
-    tmin < t0 < t1 < tmax
+    t0 < t1
 end
 
 @inline function boundingbox(sphere::Sphere) :: AABB
