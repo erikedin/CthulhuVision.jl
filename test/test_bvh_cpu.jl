@@ -219,21 +219,21 @@ end
 
 end
 
-function bvhhit_gpu(bvh, spheres, targets, bvhtraversal, ishit)
+function bvhhit_gpu(bvh, spheres, targets, bvhtraversal, traversal_thread_size::UInt32, ishit)
     x = threadIdx().x + (blockIdx().x - 1) * blockDim().x
     n = length(targets)
     o = Vec3(0.0f0, 0.0f0, 0.0f0)
+    traversal_index_offset = UInt32((x - 1) * traversal_thread_size)
 
-    trav = TraversalList(bvhtraversal)
+    trav = TraversalList(bvhtraversal, traversal_index_offset)
     bvhworld = BVHWorld(bvh, spheres, trav)
     
-    if x == 4
+    if x <= n
         target = targets[x]
         ray = Ray(o, target)
         rec = hit(bvhworld, 0.0f0, typemax(Float32), ray)
         @cuprintln("Ray at sphere $x is a hit? $(rec.ishit)")
 
-        sync_threads()
         @inbounds ishit[x] = rec.ishit
     end
     nothing
@@ -255,9 +255,9 @@ end
         material = dielectric(1.5f0)
 
         spheres = Vector{Sphere}()
-        for x = -100.0f0:100.0f0:100.0f0
-            for y = -100.0f0:100.0f0:100.0f0
-                for z in [-100.0f0]
+        for x = -50.0f0:10.0f0:50.0f0
+            for y = -50.0f0:10.0f0:50.0f0
+                for z in [-100.0f0, -200.0f0]
                     push!(spheres, Sphere(Vec3(x, y, z), 10.0f0, material))
                 end
             end
@@ -268,15 +268,17 @@ end
 
         threads = 256
         blocks = ceil(Int, length(spheres) / threads)
+        traversal_thread_size = 50
+        traversal_total_size = traversal_thread_size * threads * blocks
 
         bvh_d = CuArray{BVHNode}(bvh)
         spheres_d = CuArray{Sphere}(spheres)
         targets_d = CuArray{Vec3}([s.center for s in spheres])
-        bvhtraversal = CuArray{UInt32}(undef, length(spheres))
+        bvhtraversal = CuArray{UInt32}(undef, traversal_total_size)
         ishit_d = CuArray{Bool}(undef, length(spheres))
         
         CUDAnative.@sync begin
-            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres_d, targets_d, bvhtraversal, ishit_d)
+            @cuda threads=threads blocks=blocks bvhhit_gpu(bvh_d, spheres_d, targets_d, bvhtraversal, UInt32(traversal_thread_size), ishit_d)
         end
 
         ishit = Vector{Bool}(ishit_d)

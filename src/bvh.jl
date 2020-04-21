@@ -85,18 +85,19 @@ end
 
 mutable struct TraversalList
     array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}
+    offset::UInt32
     len::UInt32
 
-    TraversalList(array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}) = new(array, 0)
+    TraversalList(array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Global}, offset::UInt32) = new(array, offset, 0)
 end
 
 @inline function add!(trav::TraversalList, v::UInt32)
     trav.len += 1
-    @inbounds trav.array[trav.len] = v
+    @inbounds trav.array[trav.offset + trav.len] = v
 end
 @inline function remove!(trav::TraversalList) :: UInt32
     trav.len -= 1
-    @inbounds trav.array[trav.len + 1]
+    @inbounds trav.array[trav.offset + trav.len + 1]
 end
 @inline isempty(trav::TraversalList) :: Bool = trav.len == 0
 
