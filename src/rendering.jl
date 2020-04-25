@@ -1,6 +1,6 @@
 module Rendering
 
-export render
+export render, Scene, SceneSettings
 
 using CuArrays, CUDAnative
 
@@ -13,7 +13,16 @@ using CthulhuVision.Materials
 using CthulhuVision.Spheres
 using CthulhuVision.BVH
 
-@inline function color(r::Ray, world, rng::UniformRNG) :: RGB
+struct SceneSettings
+    ambientemission::RGB
+end
+
+struct Scene
+    world::AbstractVector{Sphere}
+    settings::SceneSettings
+end
+
+@inline function color(r::Ray, world, settings::SceneSettings, rng::UniformRNG) :: RGB
     maxbounces = 50
 
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
@@ -33,6 +42,7 @@ using CthulhuVision.BVH
             result += rec.material.emission * attenuation
             ray = scattered.ray
         else
+            result += attenuation * settings.ambientemission
             break
         end
     end
@@ -45,7 +55,7 @@ end
     uniformfromindex(index)
 end
 
-function gpurender(a, camera, width, height, world, bvh, traversal_thread_size)
+function gpurender(a, camera, width, height, scenesettings, world, bvh, traversal_thread_size)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
@@ -68,7 +78,7 @@ function gpurender(a, camera, width, height, world, bvh, traversal_thread_size)
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
             ray = getray(camera, u, v, rng)
-            col = col + color(ray, bvhworld, rng)
+            col = col + color(ray, bvhworld, scenesettings, rng)
         end
 
         col /= Float32(nsamples)
@@ -79,11 +89,11 @@ function gpurender(a, camera, width, height, world, bvh, traversal_thread_size)
     return nothing
 end
 
-function render(image::PPM, camera, world::AbstractVector{Sphere})
+function render(image::PPM, camera, scene::Scene)
     CuArrays.@allowscalar false
 
     pixels = CuArray{RGB}(undef, image.dimension.height, image.dimension.width)
-    world_d = CuArray{Sphere}(world)
+    world_d = CuArray{Sphere}(scene.world)
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
     threads = (16, 16)
@@ -92,12 +102,12 @@ function render(image::PPM, camera, world::AbstractVector{Sphere})
     shmem = threads[1] * threads[2] * sizeof(Float32) * traversal_thread_size
 
     rng = uniformfromindex(0)
-    bvh = bvhbuilder(world, rng)
+    bvh = bvhbuilder(scene.world, rng)
 
     bvh_d = CuArray{BVHNode}(bvh)
 
     CuArrays.@sync begin
-        @cuda threads=threads blocks=blocks shmem=shmem gpurender(pixels, camera, image.dimension.width, image.dimension.height, world_d, bvh_d, UInt32(traversal_thread_size))
+        @cuda threads=threads blocks=blocks shmem=shmem gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, world_d, bvh_d, UInt32(traversal_thread_size))
     end
 
     cpuarray = Array{RGB, 2}(pixels)
