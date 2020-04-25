@@ -30,12 +30,9 @@ using CthulhuVision.BVH
             end
 
             attenuation = attenuation * scattered.attenuation
+            result += rec.material.emission * attenuation
             ray = scattered.ray
         else
-            unitdirection = unit(direction(ray))
-            t = 0.5f0 * (unitdirection.y + 1.0f0)
-            vec = (1.0f0 - t)*Vec3(1.0f0, 1.0f0, 1.0f0) + t*Vec3(0.5f0, 0.7f0, 1.0f0)
-            result = attenuation * RGB(vec.x, vec.y, vec.z)
             break
         end
     end

@@ -14,12 +14,13 @@ struct Material
     pmetal      :: Float32
     pdielectric :: Float32
     refindex    :: Float32
+    emission    :: RGB
 end
 
-@inline nomaterial() = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0)
-@inline lambertian(albedo::RGB) = Material(albedo, 0.0f0, 1.0f0, 0.0f0, 0.0f0, 0.0f0)
-@inline metal(albedo::RGB, fuzz :: Float32 = 0.0f0) = Material(albedo, fuzz, 0.0f0, 1.0f0, 0.0f0, 0.0f0)
-@inline dielectric(refindex::Float32) = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0, 0.0f0, 1.0f0, refindex)
+@inline nomaterial() = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0, 0.0f0, 0.0f0, 0.0f0, RGB(0.0f0, 0.0f0, 0.0f0))
+@inline lambertian(albedo::RGB) = Material(albedo, 0.0f0, 1.0f0, 0.0f0, 0.0f0, 0.0f0, RGB(0.0f0, 0.0f0, 0.0f0))
+@inline metal(albedo::RGB, fuzz :: Float32 = 0.0f0) = Material(albedo, fuzz, 0.0f0, 1.0f0, 0.0f0, 0.0f0, RGB(0.0f0, 0.0f0, 0.0f0))
+@inline dielectric(refindex::Float32; emission = RGB(0.0f0, 0.0f0, 0.0f0)) = Material(RGB(0.0f0, 0.0f0, 0.0f0), 0.0f0, 0.0f0, 0.0f0, 1.0f0, refindex, emission)
 
 struct Scatter
     ray::Ray
