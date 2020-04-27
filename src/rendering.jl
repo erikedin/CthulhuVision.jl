@@ -55,15 +55,11 @@ end
     uniformfromindex(index)
 end
 
-function gpurender(a, camera, width, height, scenesettings, world, bvh, traversal_thread_size)
+function gpurender(a, camera, width, height, scenesettings, world, bvh)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
-    offset = UInt32(((threadIdx().x - 1) + (threadIdx().y - 1) * blockDim().x) * traversal_thread_size)
-
-    shmem = @cuDynamicSharedMem(UInt32, traversal_thread_size * blockDim().x * blockDim().y)
-    trav = TraversalList(shmem, offset)
-    bvhworld = BVHWorld(bvh, world, trav)
+    bvhworld = BVHWorld(bvh, world)
 
     rng = makeprng()
 
@@ -98,16 +94,13 @@ function render(image::PPM, camera, scene::Scene)
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
     threads = (16, 16)
 
-    traversal_thread_size = 40
-    shmem = threads[1] * threads[2] * sizeof(Float32) * traversal_thread_size
-
     rng = uniformfromindex(0)
     bvh = bvhbuilder(scene.world, rng)
 
     bvh_d = CuArray{BVHNode}(bvh)
 
     CuArrays.@sync begin
-        @cuda threads=threads blocks=blocks shmem=shmem gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, world_d, bvh_d, UInt32(traversal_thread_size))
+        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, world_d, bvh_d)
     end
 
     cpuarray = Array{RGB, 2}(pixels)

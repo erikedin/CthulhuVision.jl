@@ -4,6 +4,7 @@ export AABB, hit, bvhbuilder, BVHNode, BVHWorld, TraversalList, isleaf, left
 
 using CuArrays
 using CUDAnative
+using StaticArrays
 
 using CthulhuVision.Light
 using CthulhuVision.Math
@@ -84,20 +85,19 @@ end
 #
 
 mutable struct TraversalList
-    array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Shared}
-    offset::UInt32
+    array::MVector{30, UInt32}
     len::UInt32
 
-    TraversalList(array::CuDeviceArray{UInt32, 1, CUDAnative.AS.Shared}, offset::UInt32) = new(array, offset, 0)
+    TraversalList() = new(zeros(MVector{30, UInt32}), 0)
 end
 
 @inline function add!(trav::TraversalList, v::UInt32)
     trav.len += 1
-    @inbounds trav.array[trav.offset + trav.len] = v
+    @inbounds trav.array[trav.len] = v
 end
 @inline function remove!(trav::TraversalList) :: UInt32
     trav.len -= 1
-    @inbounds trav.array[trav.offset + trav.len + 1]
+    @inbounds trav.array[trav.len + 1]
 end
 @inline isempty(trav::TraversalList) :: Bool = trav.len == 0
 
@@ -198,15 +198,15 @@ end
 struct BVHWorld
     bvhs::CuDeviceArray{BVHNode, 1, CUDAnative.AS.Global}
     world::CuDeviceArray{Sphere, 1, CUDAnative.AS.Global}
-    traversal::TraversalList
 end
 
 @inline function hit(bvh::BVHWorld, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
     rec = HitRecord()
-    add!(bvh.traversal, 0x00_00_00_01)
+    traversal = TraversalList()
+    add!(traversal, 0x00_00_00_01)
 
-    while !isempty(bvh.traversal)
-        nodeindex = remove!(bvh.traversal)
+    while !isempty(traversal)
+        nodeindex = remove!(traversal)
 
         @inbounds node = bvh.bvhs[nodeindex]
         if hit(node.box, ray, tmin, tmax)
@@ -218,8 +218,8 @@ end
                     rec = thisrec
                 end
             else
-                add!(bvh.traversal, left(node))
-                add!(bvh.traversal, right(node))
+                add!(traversal, left(node))
+                add!(traversal, right(node))
             end
         end
     end
