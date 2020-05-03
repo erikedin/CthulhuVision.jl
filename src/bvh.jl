@@ -13,45 +13,35 @@ using CthulhuVision.Materials
 using CthulhuVision.Spheres
 import CthulhuVision.Spheres: hit
 
+###################
+# Host and Device #
+###################
+
 struct AABB
     min::Vec3
     max::Vec3
 end
 
-@inline function hit(aabb::AABB, ray::Ray, tmin::Float32, tmax::Float32) :: Bool
-    inversedistancex = 1.0f0 / direction(ray).x
-    tx0 = (aabb.min.x - origin(ray).x) * inversedistancex
-    tx1 = (aabb.max.x - origin(ray).x) * inversedistancex
-    if inversedistancex < 0.0f0
-        tx0, tx1 = tx1, tx0
-    end
-
-    inversedistancey = 1.0f0 / direction(ray).y
-    ty0 = (aabb.min.y - origin(ray).y) * inversedistancey
-    ty1 = (aabb.max.y - origin(ray).y) * inversedistancey
-    if inversedistancey < 0.0f0
-        ty0, ty1 = ty1, ty0
-    end
-
-    inversedistancez = 1.0f0 / direction(ray).z
-    tz0 = (aabb.min.z - origin(ray).z) * inversedistancez
-    tz1 = (aabb.max.z - origin(ray).z) * inversedistancez
-    if inversedistancez < 0.0f0
-        tz0, tz1 = tz1, tz0
-    end
-
-    t0 = max(tx0, ty0, tz0, tmin)
-    t1 = min(tx1, ty1, tz1, tmax)
-
-    t0 < t1
+# BVHNode is a node in the tree structure we build to accelerate
+# the hit function.
+# It keeps track of a bounding box, which contains all of its children
+# and a pointer to the left and right child node.
+struct BVHNode
+    box::AABB
+    left::UInt32
+    right::UInt32
 end
 
-@inline function boundingbox(sphere::Sphere) :: AABB
+########
+# Host #
+########
+
+function boundingbox(sphere::Sphere) :: AABB
     r = Vec3(sphere.radius, sphere.radius, sphere.radius)
     AABB(sphere.center - r, sphere.center + r)
 end
 
-@inline function surroundingbox(c::AABB, d::AABB) :: AABB
+function surroundingbox(c::AABB, d::AABB) :: AABB
     small = Vec3(
         min(c.min.x, d.min.x),
         min(c.min.y, d.min.y),
@@ -66,7 +56,7 @@ end
     AABB(small, big)
 end
 
-@inline function boundingbox(spheres::AbstractArray{Sphere}) :: AABB
+function boundingbox(spheres::AbstractArray{Sphere}) :: AABB
     box = AABB(
         Vec3(Inf32, Inf32, Inf32),
         Vec3(-Inf32, -Inf32, -Inf32)
@@ -79,59 +69,20 @@ end
     box
 end
 
-#
-# TraversalList is a wrapper around a fixed size array.
-# It keeps track of which nodes to visit in the BVH structure.
-#
-
-mutable struct TraversalList
-    array::MVector{30, UInt32}
-    len::UInt32
-
-    TraversalList() = new(zeros(MVector{30, UInt32}), 0)
-end
-
-@inline function add!(trav::TraversalList, v::UInt32)
-    trav.len += 1
-    @inbounds trav.array[trav.len] = v
-end
-@inline function remove!(trav::TraversalList) :: UInt32
-    trav.len -= 1
-    @inbounds trav.array[trav.len + 1]
-end
-@inline isempty(trav::TraversalList) :: Bool = trav.len == 0
-
-#
-# BVHNode is a node in the tree structure we build to accelerate
-# the hit function.
-# It keeps track of a bounding box, which contains all its children
-# and a pointer to the left and right child node.
-#
-
-struct BVHNode
-    box::AABB
-    left::UInt32
-    right::UInt32
-end
-
-@inline function leafnode(sphere::Sphere, index::UInt32) :: BVHNode
+function leafnode(sphere::Sphere, index::UInt32) :: BVHNode
     leafindex = 0x8000_0000 | index
     box = boundingbox(sphere)
 
     BVHNode(box, leafindex, 0x0000_0000)
 end
 
-@inline function parentnode(leftindex::UInt32, left::BVHNode, rightindex::UInt32, right::BVHNode) :: BVHNode
+function parentnode(leftindex::UInt32, left::BVHNode, rightindex::UInt32, right::BVHNode) :: BVHNode
     box = surroundingbox(left.box, right.box)
     left = 0x7FFF_FFFF & leftindex
     right = 0x7FFF_FFFF & rightindex
 
     BVHNode(box, left, right)
 end
-
-@inline isleaf(n::BVHNode) :: Bool = n.left & 0x80000000 != 0
-@inline left(n::BVHNode) :: UInt32 = n.left & 0x7FFFFFFF
-@inline right(n::BVHNode) :: UInt32 = n.right & 0x7FFFFFFF
 
 function allocatebvhnode(nodes::Vector{BVHNode}) :: Int
     n = BVHNode(
@@ -194,6 +145,63 @@ function bvhbuilder(spheres::AbstractArray{Sphere}, rng::UniformRNG) :: Abstract
 
     nodes
 end
+
+##########
+# Device #
+##########
+
+@inline function hit(aabb::AABB, ray::Ray, tmin::Float32, tmax::Float32) :: Bool
+    inversedistancex = 1.0f0 / direction(ray).x
+    tx0 = (aabb.min.x - origin(ray).x) * inversedistancex
+    tx1 = (aabb.max.x - origin(ray).x) * inversedistancex
+    if inversedistancex < 0.0f0
+        tx0, tx1 = tx1, tx0
+    end
+
+    inversedistancey = 1.0f0 / direction(ray).y
+    ty0 = (aabb.min.y - origin(ray).y) * inversedistancey
+    ty1 = (aabb.max.y - origin(ray).y) * inversedistancey
+    if inversedistancey < 0.0f0
+        ty0, ty1 = ty1, ty0
+    end
+
+    inversedistancez = 1.0f0 / direction(ray).z
+    tz0 = (aabb.min.z - origin(ray).z) * inversedistancez
+    tz1 = (aabb.max.z - origin(ray).z) * inversedistancez
+    if inversedistancez < 0.0f0
+        tz0, tz1 = tz1, tz0
+    end
+
+    t0 = max(tx0, ty0, tz0, tmin)
+    t1 = min(tx1, ty1, tz1, tmax)
+
+    t0 < t1
+end
+
+# TraversalList is a wrapper around a fixed size array.
+# It keeps track of which nodes to visit in the BVH structure.
+mutable struct TraversalList
+    array::MVector{30, UInt32}
+    len::UInt32
+
+    TraversalList() = new(zeros(MVector{30, UInt32}), 0)
+end
+
+@inline function add!(trav::TraversalList, v::UInt32)
+    trav.len += 1
+    @inbounds trav.array[trav.len] = v
+end
+@inline function remove!(trav::TraversalList) :: UInt32
+    trav.len -= 1
+    @inbounds trav.array[trav.len + 1]
+end
+@inline isempty(trav::TraversalList) :: Bool = trav.len == 0
+
+
+
+@inline isleaf(n::BVHNode) :: Bool = n.left & 0x80000000 != 0
+@inline left(n::BVHNode) :: UInt32 = n.left & 0x7FFFFFFF
+@inline right(n::BVHNode) :: UInt32 = n.right & 0x7FFFFFFF
 
 struct BVHWorld
     bvhs::CuDeviceArray{BVHNode, 1, CUDAnative.AS.Global}

@@ -7,7 +7,9 @@ using CthulhuVision.Materials
 using CthulhuVision.Light
 using CUDAnative
 
-struct Sphere
+abstract type Boundable end
+
+struct Sphere <: Boundable
     center::Vec3
     radius::Float32
     material::Material
