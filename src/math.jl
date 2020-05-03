@@ -1,6 +1,7 @@
 module Math
 
 export Vec3, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost, Transform
+export identitytransform
 
 using CUDAnative
 using CthulhuVision.Random
@@ -109,6 +110,15 @@ end
     z = a.e31 * b.x + a.e32 * b.y + a.e33 * b.z + a.e34 * w
 
     Vec3(x, y, z)
+end
+
+function identitytransform() :: Transform
+    Transform(
+        1f0, 0f0, 0f0, 0f0,
+        0f0, 1f0, 0f0, 0f0,
+        0f0, 0f0, 1f0, 0f0,
+        0f0, 0f0, 0f0, 0f0,
+    )
 end
 
 end

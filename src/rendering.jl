@@ -1,6 +1,6 @@
 module Rendering
 
-export render, Scene, SceneSettings
+export render
 
 using CuArrays, CUDAnative
 
@@ -11,16 +11,8 @@ using CthulhuVision.Image
 using CthulhuVision.Camera
 using CthulhuVision.Materials
 using CthulhuVision.Spheres
+using CthulhuVision.Scenes
 using CthulhuVision.BVH
-
-struct SceneSettings
-    ambientemission::RGB
-end
-
-struct Scene
-    world::AbstractVector{Sphere}
-    settings::SceneSettings
-end
 
 @inline function color(r::Ray, world, settings::SceneSettings, rng::UniformRNG) :: RGB
     maxbounces = 50
