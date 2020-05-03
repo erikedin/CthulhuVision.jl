@@ -8,52 +8,33 @@ using CthulhuVision.Spheres
 using CthulhuVision.Scenes
 using CthulhuVision.Random
 
+################
+# Define image #
+################
+
 width = 200
 height = 100
 image = PPM(Dimension(width, height))
+
+####################
+# Define materials #
+####################
 
 brown = lambertian(RGB(0.4f0, 0.2f0, 0.1f0))
 shiny = metal(RGB(0.7f0, 0.6f0, 0.5f0))
 grey  = lambertian(RGB(0.5f0, 0.5f0, 0.5f0))
 light = dielectric(1.0f0; emission = RGB(1.0f0, 1.0f0, 1.0f0))
 
-world = Vector{Sphere}([
-    Sphere(Vec3( 0.0f0, -1000.0f0, 0.0f0), 1000.0f0, grey),
-    Sphere(Vec3( 0.0f0,   100.0f0, 0.0f0),   50.0f0, light),
-    Sphere(Vec3( 0.0f0,     1.0f0, 0.0f0),    1.0f0, dielectric(1.5f0)),
-    Sphere(Vec3(-4.0f0,     1.0f0, 0.0f0),    1.0f0, brown),
-    Sphere(Vec3( 4.0f0,     1.0f0, 3.0f0),    1.0f0, shiny),
-])
+#################
+# SceneSettings #
+#################
 
-rng = uniformfromindex(0)
+ambientemission = RGB(0.02f0, 0.02f0, 0.1f0)
+settings = SceneSettings(ambientemission)
 
-for a = -11:10
-    for b = -11:10
-        for c = 1:2
-            radius = 0.005f0
-            choosematerial = next(rng)
-            center = Vec3(Float32(a) + next(rng), radius, b + next(rng))
-            if lenhost(center - Vec3(4.0f0, 0.2f0, 0.0f0)) > 0.2f0
-                material = if choosematerial < 0.8
-                    lambertian(RGB(next(rng) * next(rng), next(rng) * next(rng), next(rng) * next(rng)))
-                elseif choosematerial < 0.95
-                    metal(RGB(0.5f0 * (1.0f0 + next(rng)), 0.5f0 * (1.0f0 + next(rng)), 0.5f0 * (1.0f0 + next(rng))))
-                else
-                    dielectric(1.5f0)
-                end
-                sphere = Sphere(center, radius, material)
-                push!(world, sphere)
-            end
-        end
-    end
-end
-
-transforms = [
-    identitytransform(),
-]
-instances = [
-    Instance(i, 1) for i = 1:length(world)
-]
+##########
+# Camera #
+##########
 
 aspect = Float32(image.dimension.width / image.dimension.height)
 vfov = 20.0f0
@@ -66,9 +47,29 @@ aperture = 0.1f0
 
 camera = FovCamera(lookfrom, lookat, vup, vfov, aspect, aperture, focusdist)
 
-ambientemission = RGB(0.02f0, 0.02f0, 0.1f0)
-settings = SceneSettings(ambientemission)
-scene = Scene(world, transforms, instances, settings)
+###################
+# Construct scene #
+###################
+
+bigsphere = Sphere(Vec3(0f0, 0f0, 0f0), 1000f0, grey),
+node1 = transform([bigsphere], translation(0f0, -1000f0, 0f0))
+
+lightsphere = Sphere(Vec3(0f0, 0f0, 0f0),   50f0, light),
+node2 = transform([lightsphere], translation(0f0, 100f0, 0f0))
+
+smallspheres = Vector{Sphere}([
+    Sphere(Vec3( 0.0f0,     1.0f0, 0.0f0),    1.0f0, dielectric(1.5f0)),
+    Sphere(Vec3(-4.0f0,     1.0f0, 0.0f0),    1.0f0, brown),
+    Sphere(Vec3( 4.0f0,     1.0f0, 3.0f0),    1.0f0, shiny),
+])
+node3child = transform(smallspheres, translation(0f0, 0f0, -8f0))
+node3parent = transform(node3child, rotation(-π/8))
+
+scene = Scene([node1, node2, node3parent], settings)
+
+##################
+# Perform render #
+##################
 
 render(image, camera, scene)
 
