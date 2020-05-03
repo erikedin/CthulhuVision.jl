@@ -156,6 +156,13 @@ function rotation(θ::Float32, axis::Vec3) :: Transform
     e42 = 0f0
     e43 = 0f0
     e44 = 0f0
+
+    Transform(
+        e11, e12, e13, e14,
+        e21, e22, e23, e24,
+        e31, e32, e33, e34,
+        e41, e42, e43, e44,
+    )
 end
 
 end

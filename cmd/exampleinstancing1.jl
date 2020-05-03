@@ -51,10 +51,10 @@ camera = FovCamera(lookfrom, lookat, vup, vfov, aspect, aperture, focusdist)
 # Construct scene #
 ###################
 
-bigsphere = Sphere(Vec3(0f0, 0f0, 0f0), 1000f0, grey),
+bigsphere = Sphere(Vec3(0f0, 0f0, 0f0), 1000f0, grey)
 node1 = transform([bigsphere], translation(0f0, -1000f0, 0f0))
 
-lightsphere = Sphere(Vec3(0f0, 0f0, 0f0),   50f0, light),
+lightsphere = Sphere(Vec3(0f0, 0f0, 0f0),   50f0, light)
 node2 = transform([lightsphere], translation(0f0, 100f0, 0f0))
 
 smallspheres = Vector{Sphere}([
@@ -62,11 +62,13 @@ smallspheres = Vector{Sphere}([
     Sphere(Vec3(-4.0f0,     1.0f0, 0.0f0),    1.0f0, brown),
     Sphere(Vec3( 4.0f0,     1.0f0, 3.0f0),    1.0f0, shiny),
 ])
-yaxis = Vec(0f0, 1f0, 0f0)
+yaxis = Vec3(0f0, 1f0, 0f0)
 node3child = transform(smallspheres, translation(0f0, 0f0, -8f0))
-node3parent = transform(node3child, rotation(-π/8, yaxis))
+node3parent = transform([node3child], rotation(Float32(-π/8f0), yaxis))
 
-scene = Scene([node1, node2, node3parent], settings)
+rootnode = group([node1, node2, node3parent])
+
+scene = Scene(rootnode, settings)
 
 ##################
 # Perform render #
