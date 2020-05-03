@@ -1,7 +1,7 @@
 module Math
 
 export Vec3, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost, Transform
-export identitytransform
+export identitytransform, translation, rotation
 
 using CUDAnative
 using CthulhuVision.Random
@@ -112,6 +112,10 @@ end
     Vec3(x, y, z)
 end
 
+########
+# Host #
+########
+
 function identitytransform() :: Transform
     Transform(
         1f0, 0f0, 0f0, 0f0,
@@ -119,6 +123,39 @@ function identitytransform() :: Transform
         0f0, 0f0, 1f0, 0f0,
         0f0, 0f0, 0f0, 0f0,
     )
+end
+
+function translation(x::Float32, y::Float32, z::Float32) :: Transform
+    Transform(
+        0f0, 0f0, 0f0, x,
+        0f0, 0f0, 0f0, y,
+        0f0, 0f0, 0f0, z,
+        0f0, 0f0, 0f0, 0f0, 
+    )  
+end
+
+function rotation(θ::Float32, axis::Vec3) :: Transform
+    u = unithost(axis)
+
+    e11 = cos(θ) + u.x*u.x*(1f0 - cos(θ))
+    e12 = u.x * u.y * (1f0 - cos(θ)) - u.z * sin(θ)
+    e13 = u.x * u.z * (1f0 - cos(θ)) + u.y * sin(θ)
+    e14 = 0f0
+
+    e21 = u.y * u.x * (1f0 - cos(θ)) + u.z * sin(θ)
+    e22 = cos(θ) + u.y * u.y * (1f0 - cos(θ))
+    e23 = u.y * u.z * (1f0 - cos(θ)) - u.x * sin(θ)
+    e24 = 0f0
+
+    e31 = u.z * u.x * (1f0 - cos(θ)) - u.y * sin(θ)
+    e32 = u.z * u.y * (1f0 - cos(θ)) + u.x * sin(θ)
+    e33 = cos(θ) + u.z * u.z * (1f0 - cos(θ))
+    e34 = 0f0
+
+    e41 = 0f0
+    e42 = 0f0
+    e43 = 0f0
+    e44 = 0f0
 end
 
 end

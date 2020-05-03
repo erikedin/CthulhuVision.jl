@@ -62,8 +62,9 @@ smallspheres = Vector{Sphere}([
     Sphere(Vec3(-4.0f0,     1.0f0, 0.0f0),    1.0f0, brown),
     Sphere(Vec3( 4.0f0,     1.0f0, 3.0f0),    1.0f0, shiny),
 ])
+yaxis = Vec(0f0, 1f0, 0f0)
 node3child = transform(smallspheres, translation(0f0, 0f0, -8f0))
-node3parent = transform(node3child, rotation(-π/8))
+node3parent = transform(node3child, rotation(-π/8, yaxis))
 
 scene = Scene([node1, node2, node3parent], settings)
 
