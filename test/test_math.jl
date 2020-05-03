@@ -21,26 +21,26 @@ using CUDAnative, CuArrays
     nothing
 end
 
-# @testset "Math GPU                " begin
-#     @testset "Random vectors in unit sphere have length < 1.0f0" begin
-#         threads = 32
-#         blocks = 8
-#         n = threads * blocks
-#         result = CuArray{Vec3}(undef, n)
+@testset "Math GPU                " begin
+    @testset "Random vectors in unit sphere have length < 1.0f0" begin
+        threads = 32
+        blocks = 8
+        n = threads * blocks
+        result = CuArray{Vec3}(undef, n)
 
-#         CUDAnative.@sync begin
-#             @cuda threads=threads blocks=blocks randomunitvectors_gpu(result, n)
-#         end
+        CUDAnative.@sync begin
+            @cuda threads=threads blocks=blocks randomunitvectors_gpu(result, n)
+        end
 
-#         result_host = Vector{Vec3}(result)
+        result_host = Vector{Vec3}(result)
 
-#         for i = 1:n
-#             v = result_host[i]
-#             l = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-#             @test l < 1.0f0
-#         end
-#     end
-# end
+        for i = 1:n
+            v = result_host[i]
+            l = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+            @test l < 1.0f0
+        end
+    end
+end
 
 @testset "Math Transform          " begin
     @testset "Matrix * Matrix" begin
