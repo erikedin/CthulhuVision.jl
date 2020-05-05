@@ -1,16 +1,11 @@
 module Scenes
 
-export Scene, SceneSettings, Instance
+export Scene, SceneSettings, SceneNode
 export group, transform
 
 using CthulhuVision.Math
 using CthulhuVision.Light
 using CthulhuVision.Spheres
-
-struct Instance
-    sphereindex::UInt32
-    transformindex::UInt32
-end
 
 struct SceneSettings
     ambientemission::RGB

@@ -11,6 +11,7 @@ using CthulhuVision.Math
 using CthulhuVision.Random
 using CthulhuVision.Materials
 using CthulhuVision.Spheres
+using CthulhuVision.Worlds
 import CthulhuVision.Spheres: hit
 
 ###################
@@ -94,25 +95,34 @@ function allocatebvhnode(nodes::Vector{BVHNode}) :: Int
     length(nodes)
 end
 
-function makebvhnode(spheres::Vector{Tuple{UInt32, Sphere}}, start::UInt32, last::UInt32, rng::UniformRNG, nodes::Vector{BVHNode}) :: UInt32
+function makebvhnode(world::World, start::UInt32, last::UInt32, rng::UniformRNG, nodes::Vector{BVHNode}) :: UInt32
     axischoice = next(rng)
-    byaxis = if axischoice < 0.33f0
-        s -> s[2].center.x - s[2].radius
-    elseif axischoice < 0.66f0
-        s -> s[2].center.y - s[2].radius
-    else
-        s -> s[2].center.z - s[2].radius
+    function byaxis(instance::Instance)
+        # TODO Transform the sphere coordinates and use that for axis.
+        if axischoice < 0.33f0
+            s -> s[2].center.x - s[2].radius
+        elseif axischoice < 0.66f0
+            s -> s[2].center.y - s[2].radius
+        else
+            s -> s[2].center.z - s[2].radius
+        end
     end
 
     thisindex = allocatebvhnode(nodes)
 
     isleaf = start == last
     if isleaf
-        sphereindex = spheres[start][1]
-        sphere = spheres[start][2]
-        node = leafnode(sphere, sphereindex)
+        instanceindex = start
+        instance = world.instances[instanceindex]
+        sphere = world.objects[instance.objectindex]
+        # TODO Need to compute the box from a transformed sphere
+        #      inside leafnode
+        node = leafnode(sphere, instanceindex)
         nodes[thisindex] = node
     else
+        # TODO Sort list of instances instead.
+        # Maybe not sort the actual instance list though, maybe.
+        # Or do, I don't know.
         sphereview = view(spheres, start:last)
         sort!(sphereview, by=byaxis)
 
@@ -121,9 +131,9 @@ function makebvhnode(spheres::Vector{Tuple{UInt32, Sphere}}, start::UInt32, last
         leftlast = UInt32(start + ceil(UInt32, n / 2) - 1)
         rightstart = UInt32(leftlast + 1)
 
-        leftindex = makebvhnode(spheres, start, leftlast, rng, nodes)
+        leftindex = makebvhnode(world, start, leftlast, rng, nodes)
         leftnode = nodes[leftindex]
-        rightindex = makebvhnode(spheres, rightstart, last, rng, nodes)
+        rightindex = makebvhnode(world, rightstart, last, rng, nodes)
         rightnode = nodes[rightindex]
 
         node = parentnode(leftindex, leftnode, rightindex, rightnode)
@@ -133,15 +143,10 @@ function makebvhnode(spheres::Vector{Tuple{UInt32, Sphere}}, start::UInt32, last
     thisindex
 end
 
-function bvhbuilder(spheres::AbstractArray{Sphere}, rng::UniformRNG) :: AbstractVector{BVHNode}
+function bvhbuilder(world::World, rng::UniformRNG) :: AbstractVector{BVHNode}
     nodes = Vector{BVHNode}()
 
-    sphereswithindex = Vector{Tuple{UInt32, Sphere}}(
-        [Tuple{UInt32, Sphere}((UInt32(i), s))
-         for (i, s) in enumerate(spheres)]
-    )
-
-    makebvhnode(sphereswithindex, UInt32(1), UInt32(length(sphereswithindex)), rng, nodes)
+    makebvhnode(world, UInt32(1), UInt32(length(world.instances)), rng, nodes)
 
     nodes
 end

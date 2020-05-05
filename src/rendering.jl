@@ -12,6 +12,7 @@ using CthulhuVision.Camera
 using CthulhuVision.Materials
 using CthulhuVision.Spheres
 using CthulhuVision.Scenes
+using CthulhuVision.Worlds
 using CthulhuVision.BVH
 
 @inline function color(r::Ray, world, settings::SceneSettings, rng::UniformRNG) :: RGB
@@ -80,14 +81,16 @@ end
 function render(image::PPM, camera, scene::Scene)
     CuArrays.@allowscalar false
 
+    world = buildworld(scene)
+
     pixels = CuArray{RGB}(undef, image.dimension.height, image.dimension.width)
-    world_d = CuArray{Sphere}(scene.world)
+    world_d = CuArray{Sphere}(world.objects)
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
     threads = (16, 16)
 
     rng = uniformfromindex(0)
-    bvh = bvhbuilder(scene.world, rng)
+    bvh = bvhbuilder(world, rng)
 
     bvh_d = CuArray{BVHNode}(bvh)
 
