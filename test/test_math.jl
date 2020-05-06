@@ -41,3 +41,57 @@ end
         end
     end
 end
+
+struct TTV
+    v::Vec3
+    t::Transform
+    expected::Vec3
+end
+
+@testset "Math Transform          " begin
+    vec3_transforms = [
+        TTV(
+            Vec3(0f0, 0f0, 0f0),
+            translation(1f0, 0f0, 0f0),
+            Vec3(1f0, 0f0, 0f0),
+        ),
+
+        TTV(
+            Vec3(0f0, 0f0, 0f0),
+            translation(0f0, 1f0, 0f0),
+            Vec3(0f0, 1f0, 0f0),
+        ),
+
+        TTV(
+            Vec3(0f0, 0f0, 0f0),
+            translation(0f0, 0f0, 1f0),
+            Vec3(0f0, 0f0, 1f0),
+        ),
+
+        TTV(
+            Vec3(0f0, 0f0, 0f0),
+            translation(1f0, 2f0, 3f0),
+            Vec3(1f0, 2f0, 3f0),
+        ),
+
+        TTV(
+            Vec3(4f0, 5f0, 6f0),
+            translation(1f0, 2f0, 3f0),
+            Vec3(5f0, 7f0, 9f0),
+        ),
+
+        TTV(
+            Vec3(2f0, 0f0, 0f0),
+            translation(1f0, 0f0, 0f0),
+            Vec3(3f0, 0f0, 0f0),
+        ),
+    ]
+
+    @testset "Transform * Vector" begin
+        for ttv in vec3_transforms
+            actual = ttv.t * ttv.v
+
+            @test actual == ttv.expected
+        end
+    end
+end
