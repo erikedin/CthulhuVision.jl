@@ -27,7 +27,7 @@ blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
 white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
 shiny = metal(RGB(0.7f0, 0.6f0, 0.5f0))
 grey  = lambertian(RGB(0.5f0, 0.5f0, 0.5f0))
-light = dielectric(1.0f0; emission = RGB(1.0f0, 1.0f0, 1.0f0))
+light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(1.0f0, 1.0f0, 1.0f0))
 
 #################
 # SceneSettings #
@@ -74,8 +74,8 @@ bottomwallnode = transform([whitewall], bottomtransform)
 backtransform = translation(0f0, 0f0, -555f0)
 backwallnode = transform([whitewall], backtransform)
 
-lightbox = uniformwall(130f0, 105f0, 1000, light)
-lightboxtransform = translation(213f0, 554f0, -227f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
+lightbox = uniformwall(250f0, 250f0, 1000, light)
+lightboxtransform = translation(177f0, 554f0, -177f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
 lightboxnode = transform([lightbox], lightboxtransform)
 
 tallblock = block(165f0, 330f0, 165f0, 100, white)
