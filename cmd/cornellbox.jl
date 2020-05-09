@@ -78,6 +78,14 @@ lightbox = uniformwall(130f0, 105f0, 1000, light)
 lightboxtransform = translation(213f0, 554f0, -227f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
 lightboxnode = transform([lightbox], lightboxtransform)
 
+tallblock = block(165f0, 330f0, 165f0, 100, white)
+tallblocktransform = translation(70f0, 0f0, -460f0) * rotation(Float32(0.05 * 2f0 * π), Vec3(0f0, 1f0, 0f0))
+tallblocknode = transform([tallblock], tallblocktransform)
+
+shortblock = block(165f0, 165f0, 165f0, 100, white)
+shortblocktransform = translation(320f0, 0f0, -260f0) * rotation(Float32(-0.0617f0 * 2f0 * π), Vec3(0f0, 1f0, 0f0))
+shortblocknode = transform([shortblock], shortblocktransform)
+
 rootnode = group([
     redwallnode,
     greenwallnode,
@@ -85,6 +93,8 @@ rootnode = group([
     bottomwallnode,
     backwallnode,
     lightboxnode,
+    tallblocknode,
+    shortblocknode,
 ])
 
 scene = Scene(rootnode, settings)
