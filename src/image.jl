@@ -1,6 +1,7 @@
 module Image
 
 export Dimension, Pixel, PPM, saveimage, pixel, examplefilename
+export dimension4K
 
 using Dates
 using CthulhuVision.Light
@@ -9,6 +10,8 @@ struct Dimension
     width::Int
     height::Int
 end
+
+dimension4K() = Dimension(3840, 2160)
 
 struct Pixel
     x::Int

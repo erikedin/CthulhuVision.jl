@@ -34,6 +34,10 @@ function group(children::AbstractVector{SceneNode}) :: SceneNode
     SceneNode(identitytransform(), Vector{Sphere}(), children)
 end
 
+function group(objects::AbstractVector{Sphere}) :: SceneNode
+    SceneNode(identitytransform(), objects, Vector{SceneNode}())
+end
+
 struct Scene
     rootnode::SceneNode
     settings::SceneSettings
