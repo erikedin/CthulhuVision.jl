@@ -24,6 +24,7 @@ image = PPM(Dimension(width, height))
 red = lambertian(RGB(0.9f0, 0.1f0, 0.1f0))
 green = lambertian(RGB(0.1f0, 0.9f0, 0.1f0))
 blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
+white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
 shiny = metal(RGB(0.7f0, 0.6f0, 0.5f0))
 grey  = lambertian(RGB(0.5f0, 0.5f0, 0.5f0))
 light = dielectric(1.0f0; emission = RGB(1.0f0, 1.0f0, 1.0f0))
@@ -32,7 +33,7 @@ light = dielectric(1.0f0; emission = RGB(1.0f0, 1.0f0, 1.0f0))
 # SceneSettings #
 #################
 
-ambientemission = RGB(0.8f0, 0.8f0, 0.8f0)
+ambientemission = RGB(0.5f0, 0.5f0, 0.5f0)
 settings = SceneSettings(ambientemission)
 
 ##########
@@ -83,10 +84,24 @@ greenwall = uniformwall(555f0, 555f0, 1000, green)
 greentransform = translation(555f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
 greenwallnode = transform([greenwall], greentransform)
 
+whitewall = uniformwall(555f0, 555f0, 1000, white)
+
+toptransform = translation(0f0, 555f0, 0f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
+topwallnode = transform([whitewall], toptransform)
+
+bottomtransform = rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
+bottomwallnode = transform([whitewall], bottomtransform)
+
+backtransform = translation(0f0, 0f0, -555f0)
+backwallnode = transform([whitewall], backtransform)
+
 rootnode = group([
     coordinatemarkers,
     redwallnode,
     greenwallnode,
+    topwallnode,
+    bottomwallnode,
+    backwallnode,
 ])
 
 scene = Scene(rootnode, settings)
