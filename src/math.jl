@@ -45,7 +45,7 @@ end
     p = Vec3(1.0f0, 1.0f0, 1.0f0)
 
     while squaredlength(p) >= 1.0f0
-        p = 2.0f0 * Vec3(next(rng), next(rng), next(rng))
+        p = 2.0f0 * Vec3(next(rng), next(rng), next(rng)) - Vec3(1f0, 1f0, 1f0)
     end
 
     p
