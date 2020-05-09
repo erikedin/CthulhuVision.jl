@@ -13,8 +13,8 @@ using CthulhuVision.Random
 # Define image #
 ################
 
-width = 256
-height = 256
+width = 512
+height = 512
 image = PPM(Dimension(width, height))
 
 ####################
