@@ -127,14 +127,15 @@ end
 
 function translation(x::Float32, y::Float32, z::Float32) :: Transform
     Transform(
-        1f0, 0f0, 0f0, x,
-        0f0, 1f0, 0f0, y,
-        0f0, 0f0, 1f0, z,
-        0f0, 0f0, 0f0, 0f0,
+        1f0, 0f0, 0f0, -x,
+        0f0, 1f0, 0f0, -y,
+        0f0, 0f0, 1f0, -z,
+        0f0, 0f0, 0f0,  0f0,
     )
 end
 
-function rotation(θ::Float32, axis::Vec3) :: Transform
+function rotation(revθ::Float32, axis::Vec3) :: Transform
+    θ = -revθ
     u = unithost(axis)
 
     e11 = cos(θ) + u.x*u.x*(1f0 - cos(θ))
