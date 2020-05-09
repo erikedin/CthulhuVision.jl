@@ -33,7 +33,7 @@ light = dielectric(1.0f0; emission = RGB(1.0f0, 1.0f0, 1.0f0))
 # SceneSettings #
 #################
 
-ambientemission = RGB(0.5f0, 0.5f0, 0.5f0)
+ambientemission = RGB(0.0f0, 0.0f0, 0.0f0)
 settings = SceneSettings(ambientemission)
 
 ##########
@@ -55,30 +55,9 @@ camera = FovCamera(lookfrom, lookat, vup, vfov, aspect, aperture, focusdist)
 # Construct scene #
 ###################
 
-coordinatemarkers = group([
-    Sphere(Vec3(  0f0, 0f0, -1f0), 11f0, grey),
-    Sphere(Vec3( 40f0, 0f0, -1f0), 11f0, red),
-    Sphere(Vec3( 80f0, 0f0, -1f0), 11f0, green),
-    Sphere(Vec3(120f0, 0f0, -1f0), 11f0, blue),
-
-    Sphere(Vec3(0f0,  40f0, -1f0), 11f0, red),
-    Sphere(Vec3(0f0,  80f0, -1f0), 11f0, green),
-    Sphere(Vec3(0f0, 120f0, -1f0), 11f0, blue),
-])
-
-redwallmarkers = group(Vector{Sphere}(
-    [
-        Sphere(Vec3(277.5f0, 277.5f0, 0f0), 10f0, green),
-        Sphere(Vec3(0f0, 0f0, 0f0), 10f0, blue),
-        Sphere(Vec3(555f0, 0f0, 0f0), 10f0, blue),
-        Sphere(Vec3(0f0, 555f0, 0f0), 10f0, blue),
-        Sphere(Vec3(555f0, 555f0, 0f0), 10f0, blue),
-    ]
-))
-
 redwall = uniformwall(555f0, 555f0, 1000, red)
 redtransform = translation(0f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
-redwallnode = transform([redwall, redwallmarkers], redtransform)
+redwallnode = transform([redwall], redtransform)
 
 greenwall = uniformwall(555f0, 555f0, 1000, green)
 greentransform = translation(555f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
@@ -95,13 +74,17 @@ bottomwallnode = transform([whitewall], bottomtransform)
 backtransform = translation(0f0, 0f0, -555f0)
 backwallnode = transform([whitewall], backtransform)
 
+lightbox = uniformwall(130f0, 105f0, 1000, light)
+lightboxtransform = translation(213f0, 554f0, -227f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
+lightboxnode = transform([lightbox], lightboxtransform)
+
 rootnode = group([
-    coordinatemarkers,
     redwallnode,
     greenwallnode,
     topwallnode,
     bottomwallnode,
     backwallnode,
+    lightboxnode,
 ])
 
 scene = Scene(rootnode, settings)
