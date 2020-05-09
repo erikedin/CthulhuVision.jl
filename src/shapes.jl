@@ -13,15 +13,13 @@ function uniformwall(width::Float32, height::Float32, nspheres::Int, material::M
 
     radius = density / sqrt(2f0)
 
-    halfwidth = width / 2f0
     stepwidth = width / Float32(nspheres)
-    halfheight = height / 2f0
     stepheight = width / Float32(nspheres)
 
     spheres = Vector{Sphere}([
         Sphere(Vec3(x, y, 0f0), radius, material)
-        for x = -halfwidth:stepwidth:halfwidth
-        for y = -halfheight:stepheight:halfheight
+        for x = 0f0:stepwidth:width
+        for y = 0f0:stepheight:height
     ])
 
     group(spheres)
