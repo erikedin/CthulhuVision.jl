@@ -76,13 +76,17 @@ redwallmarkers = group(Vector{Sphere}(
 ))
 
 redwall = uniformwall(555f0, 555f0, 1000, red)
-# redtransform = translation(555f0, 0f0, 0f0) *rotation(Float32(-π / 2f0), Vec3(0f0, 1f0, 0f0)) 
-redtransform = translation(0f0, 0f0, 0f0) * rotation(Float32(-π / 2f0), Vec3(0f0, 1f0, 0f0)) 
+redtransform = translation(0f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
 redwallnode = transform([redwall, redwallmarkers], redtransform)
+
+greenwall = uniformwall(555f0, 555f0, 1000, green)
+greentransform = translation(555f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
+greenwallnode = transform([greenwall], greentransform)
 
 rootnode = group([
     coordinatemarkers,
     redwallnode,
+    greenwallnode,
 ])
 
 scene = Scene(rootnode, settings)
