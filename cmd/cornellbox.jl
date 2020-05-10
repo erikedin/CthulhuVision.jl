@@ -103,7 +103,9 @@ scene = Scene(rootnode, settings)
 # Perform render #
 ##################
 
-render(image, camera, scene)
+rendersettings = RenderSettings(100)
+
+render(image, camera, scene, rendersettings)
 
 saveimage(image, examplefilename("cornellbox"))
 

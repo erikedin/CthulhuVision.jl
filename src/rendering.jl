@@ -1,6 +1,6 @@
 module Rendering
 
-export render, Scene, SceneSettings
+export render, RenderSettings
 
 using CuArrays, CUDAnative
 
@@ -48,7 +48,11 @@ end
     uniformfromindex(index)
 end
 
-function gpurender(a, camera, width, height, scenesettings, world, bvh)
+struct RenderSettings
+    nsamples::UInt32
+end
+
+function gpurender(a, camera, width, height, scenesettings, rendersettings::RenderSettings, world, bvh)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
@@ -56,12 +60,10 @@ function gpurender(a, camera, width, height, scenesettings, world, bvh)
 
     rng = makeprng()
 
-    nsamples = 1000
-
     if x <= width && y <= height
         col = RGB(0.0f0, 0.0f0, 0.0f0)
 
-        for s = 1:nsamples
+        for s = 1:rendersettings.nsamples
             dx = next(rng)
             dy = next(rng)
             u = Float32((x + dx) / width)
@@ -70,7 +72,7 @@ function gpurender(a, camera, width, height, scenesettings, world, bvh)
             col = col + color(ray, bvhworld, scenesettings, rng)
         end
 
-        col /= Float32(nsamples)
+        col /= Float32(rendersettings.nsamples)
 
         @inbounds a[y, x] = col
     end
@@ -78,7 +80,7 @@ function gpurender(a, camera, width, height, scenesettings, world, bvh)
     return nothing
 end
 
-function render(image::PPM, camera, scene::Scene)
+function render(image::PPM, camera, scene::Scene, rendersettings::RenderSettings)
     CuArrays.@allowscalar false
 
     pixels = CuArray{RGB}(undef, image.dimension.height, image.dimension.width)
@@ -94,7 +96,7 @@ function render(image::PPM, camera, scene::Scene)
     bvh_d = CuArray{BVHNode}(bvh)
 
     CuArrays.@sync begin
-        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, world_d, bvh_d)
+        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, rendersettings, world_d, bvh_d)
     end
 
     cpuarray = Array{RGB, 2}(pixels)
