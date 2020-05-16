@@ -16,8 +16,8 @@ end
 @inline Base.:+(a::RGB, b::RGB) :: RGB = RGB(a.r + b.r, a.g + b.g, a.b + b.b)
 
 struct Ray
-    a::Vec3
-    b::Vec3
+    a::Vector3
+    b::Vector3
 end
 
 @inline origin(r::Ray) = r.a

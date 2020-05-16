@@ -1,6 +1,9 @@
 module Triangles
 
+export Triangle, transform, hit
+
 using CthulhuVision.Math
+using CthulhuVision.Light
 
 struct Triangle
     a::Point

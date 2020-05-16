@@ -12,7 +12,6 @@ using CthulhuVision.Camera
 using CthulhuVision.Materials
 using CthulhuVision.Triangles
 using CthulhuVision.Scenes
-using CthulhuVision.BVH
 
 @inline function hit(objects::CuDeviceArray{Triangle, 1, CUDAnative.AS.Global}, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
     rec = HitRecord()

@@ -29,24 +29,24 @@ struct Scatter
 end
 
 struct Refract
-    ray::Vec3
+    ray::Vector3
     isrefracted::Bool
 end
 
 struct HitRecord
     t::Float32
-    p::Vec3
-    normal::Vec3
+    p::Vector3
+    normal::Vector3
     ishit::Bool
     material::Material
 
     HitRecord() = new(
         typemax(Float32),
-        Vec3(0.0f0, 0.0f0, 0.0f0),
-        Vec3(0.0f0, 0.0f0, 0.0f0),
+        Vector3(0.0f0, 0.0f0, 0.0f0),
+        Vector3(0.0f0, 0.0f0, 0.0f0),
         false,
         nomaterial())
-    HitRecord(t::Float32, p::Vec3, normal::Vec3, material::Material) = new(t, p, normal, true, material)
+    HitRecord(t::Float32, p::Vector3, normal::Vector3, material::Material) = new(t, p, normal, true, material)
 end
 
 @inline function scatterlambert(ray::Ray, rec::HitRecord, rng::UniformRNG) :: Scatter
@@ -56,9 +56,9 @@ end
     Scatter(scattered, rec.material.albedo, true)
 end
 
-@inline reflect(v::Vec3, n::Vec3) :: Vec3 = v - 2.0f0 * dot(v, n) * n
+@inline reflect(v::Vector3, n::Vector3) :: Vector3 = v - 2.0f0 * dot(v, n) * n
 
-@inline function refract(v::Vec3, normal::Vec3, niovernt::Float32) :: Refract
+@inline function refract(v::Vector3, normal::Vector3, niovernt::Float32) :: Refract
     uv = unit(v)
     dt = dot(uv, normal)
     discriminant = 1.0f0 - niovernt * niovernt * (1.0f0 - dt*dt)
@@ -66,7 +66,7 @@ end
         ray = niovernt * (uv - dt * normal) - CUDAnative.sqrt(discriminant) * normal
         Refract(ray, true)
     else
-        Refract(Vec3(0.0f0, 0.0f0, 0.0f0), false)
+        Refract(Vector3(0.0f0, 0.0f0, 0.0f0), false)
     end
 end
 

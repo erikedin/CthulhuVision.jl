@@ -7,10 +7,10 @@ using CthulhuVision.Random
 using CthulhuVision.Light
 
 struct SimpleCamera
-    origin     :: Vec3
-    lowerleft  :: Vec3
-    horizontal :: Vec3
-    vertical   :: Vec3
+    origin     :: Vector3
+    lowerleft  :: Vector3
+    horizontal :: Vector3
+    vertical   :: Vector3
 end
 
 @inline function getray(cam::SimpleCamera, u::Float32, v::Float32, rng::UniformRNG) :: Ray
@@ -18,29 +18,29 @@ end
     Ray(cam.origin, direction)
 end
 
-@inline unithost(v::Vec3) = 1.0f0 / sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * v
+@inline unithost(v::Vector3) = 1.0f0 / sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * v
 
-@inline function randominunitdisk(rng::UniformRNG) :: Vec3
-    p = Vec3(1.0f0, 1.0f0, 0.0f0)
+@inline function randominunitdisk(rng::UniformRNG) :: Vector3
+    p = Vector3(1.0f0, 1.0f0, 0.0f0)
 
     while dot(p, p) >= 1.0f0
-        p = 2.0f0 * Vec3(next(rng), next(rng), 0.0f0) - Vec3(1.0f0, 1.0f0, 0.0f0)
+        p = 2.0f0 * Vector3(next(rng), next(rng), 0.0f0) - Vector3(1.0f0, 1.0f0, 0.0f0)
     end
 
     p
 end
 
 struct FovCamera
-    origin     :: Vec3
-    lowerleft  :: Vec3
-    horizontal :: Vec3
-    vertical   :: Vec3
-    u          :: Vec3
-    v          :: Vec3
-    w          :: Vec3
+    origin     :: Vector3
+    lowerleft  :: Vector3
+    horizontal :: Vector3
+    vertical   :: Vector3
+    u          :: Vector3
+    v          :: Vector3
+    w          :: Vector3
     lensradius :: Float32
 
-    function FovCamera(lookfrom::Vec3, lookat::Vec3, vup::Vec3, vfov::Float32, aspect::Float32, aperture::Float32, focusdist::Float32)
+    function FovCamera(lookfrom::Vector3, lookat::Vector3, vup::Vector3, vfov::Float32, aspect::Float32, aperture::Float32, focusdist::Float32)
         lensradius = aperture / 2.0f0
         theta = vfov * pi / 180.0f0
         halfheight = tan(theta / 2.0f0)
