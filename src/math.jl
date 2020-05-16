@@ -1,54 +1,64 @@
 module Math
 
-export Vec3, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost, Transform
+export Vector, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost, Transform
 export identitytransform, translation, rotation
 
 using CUDAnative
 using CthulhuVision.Random
 
-struct Vec3
+struct Vector
     x::Float32
     y::Float32
     z::Float32
 end
 
-@inline Base.:+(a::Vec3, b::Vec3) :: Vec3 = Vec3(a.x + b.x, a.y + b.y, a.z + b.z)
-@inline Base.:-(a::Vec3, b::Vec3) :: Vec3 = Vec3(a.x - b.x, a.y - b.y, a.z - b.z)
-@inline Base.:-(a::Vec3) :: Vec3 = Vec3(-a.x, -a.y, -a.z)
-@inline Base.:*(t::Float32, v::Vec3) :: Vec3 = Vec3(t*v.x, t*v.y, t*v.z)
-@inline Base.:/(a::Vec3, t::Float32) :: Vec3 = Vec3(a.x / t, a.y / t, a.z / t)
-@inline len(a::Vec3) = CUDAnative.sqrt(a.x*a.x + a.y*a.y + a.z*a.z)
-@inline lenhost(a::Vec3) = sqrt(a.x*a.x + a.y*a.y + a.z*a.z)
-@inline squaredlength(a::Vec3) :: Float32 = a.x*a.x + a.y*a.y + a.z*a.z
+@inline Base.:+(a::Vector, b::Vector) :: Vector = Vector(a.x + b.x, a.y + b.y, a.z + b.z)
+@inline Base.:-(a::Vector, b::Vector) :: Vector = Vector(a.x - b.x, a.y - b.y, a.z - b.z)
+@inline Base.:-(a::Vector) :: Vector = Vector(-a.x, -a.y, -a.z)
+@inline Base.:*(t::Float32, v::Vector) :: Vector = Vector(t*v.x, t*v.y, t*v.z)
+@inline Base.:/(a::Vector, t::Float32) :: Vector = Vector(a.x / t, a.y / t, a.z / t)
+@inline len(a::Vector) = CUDAnative.sqrt(a.x*a.x + a.y*a.y + a.z*a.z)
+@inline lenhost(a::Vector) = sqrt(a.x*a.x + a.y*a.y + a.z*a.z)
+@inline squaredlength(a::Vector) :: Float32 = a.x*a.x + a.y*a.y + a.z*a.z
 
-@inline dot(a::Vec3, b::Vec3) :: Float32 = a.x * b.x + a.y * b.y + a.z * b.z
+@inline dot(a::Vector, b::Vector) :: Float32 = a.x * b.x + a.y * b.y + a.z * b.z
 
-@inline function cross(a::Vec3, b::Vec3) :: Vec3
-    Vec3(
+@inline function cross(a::Vector, b::Vector) :: Vector
+    Vector(
           a.y * b.z - a.z * b.y,
         -(a.x * b.z - a.z * b.x),
           a.x * b.y - a.y * b.x
     )
 end
 
-@inline function unit(a::Vec3) :: Vec3
+@inline function unit(a::Vector) :: Vector
     l = len(a)
     a / l
 end
 
-@inline function unithost(a::Vec3) :: Vec3
+@inline function unithost(a::Vector) :: Vector
     l = lenhost(a)
     a / l
 end
 
-@inline function randominunitsphere(rng::UniformRNG) :: Vec3
-    p = Vec3(1.0f0, 1.0f0, 1.0f0)
+@inline function randominunitsphere(rng::UniformRNG) :: Vector
+    p = Vector(1.0f0, 1.0f0, 1.0f0)
 
     while squaredlength(p) >= 1.0f0
-        p = 2.0f0 * Vec3(next(rng), next(rng), next(rng)) - Vec3(1f0, 1f0, 1f0)
+        p = 2.0f0 * Vector(next(rng), next(rng), next(rng)) - Vector(1f0, 1f0, 1f0)
     end
 
     p
+end
+
+#
+# Point
+#
+
+struct Point
+    x::Float32
+    y::Float32
+    z::Float32
 end
 
 #
@@ -103,13 +113,22 @@ end
     )
 end
 
-@inline function Base.:*(a::Transform, b::Vec3) :: Vec3
+@inline function Base.:*(a::Transform, b::Vector) :: Vector
+    w = 0f0
+    x = a.e11 * b.x + a.e12 * b.y + a.e13 * b.z + a.e14 * w
+    y = a.e21 * b.x + a.e22 * b.y + a.e23 * b.z + a.e24 * w
+    z = a.e31 * b.x + a.e32 * b.y + a.e33 * b.z + a.e34 * w
+
+    Vector(x, y, z)
+end
+
+@inline function Base.:*(a::Transform, b::Point) :: Point
     w = 1f0
     x = a.e11 * b.x + a.e12 * b.y + a.e13 * b.z + a.e14 * w
     y = a.e21 * b.x + a.e22 * b.y + a.e23 * b.z + a.e24 * w
     z = a.e31 * b.x + a.e32 * b.y + a.e33 * b.z + a.e34 * w
 
-    Vec3(x, y, z)
+    Point(x, y, z)
 end
 
 ########
@@ -134,7 +153,7 @@ function translation(x::Float32, y::Float32, z::Float32) :: Transform
     )
 end
 
-function rotation(θ::Float32, axis::Vec3) :: Transform
+function rotation(θ::Float32, axis::Vector) :: Transform
     u = unithost(axis)
 
     e11 = cos(θ) + u.x*u.x*(1f0 - cos(θ))
