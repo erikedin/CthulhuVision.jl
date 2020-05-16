@@ -4,9 +4,8 @@ using CthulhuVision.Light
 using CthulhuVision.Materials
 using CthulhuVision.Rendering
 using CthulhuVision.Camera
-using CthulhuVision.Spheres
+using CthulhuVision.Triangles
 using CthulhuVision.Scenes
-using CthulhuVision.Shapes
 using CthulhuVision.Random
 
 ################
@@ -50,7 +49,7 @@ function constructscene(angle::Float32) :: AbstractVector{Triangle}
 
     t = transform(triangle, r)
 
-    [t]
+    Scene([t], settings)
 end
 
 ##################

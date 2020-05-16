@@ -10,12 +10,25 @@ using CthulhuVision.Light
 using CthulhuVision.Image
 using CthulhuVision.Camera
 using CthulhuVision.Materials
-using CthulhuVision.Spheres
+using CthulhuVision.Triangles
 using CthulhuVision.Scenes
 using CthulhuVision.BVH
 
+@inline function hit(objects::CuDeviceArray{Triangle, 1, CUDAnative.AS.Global}, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
+    rec = HitRecord()
 
-@inline function color(r::Ray, world, settings::SceneSettings, rng::UniformRNG) :: RGB
+    for o in objects
+        r = hit(o, tmin, tmax, ray)
+
+        if r.ishit && r.t < rec.t
+            rec = r
+        end
+    end
+
+    rec
+end
+
+@inline function color(r::Ray, objects, settings::SceneSettings, rng::UniformRNG) :: RGB
     maxbounces = 50
 
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
@@ -23,7 +36,7 @@ using CthulhuVision.BVH
     ray = r
 
     for i = 1:maxbounces
-        rec = hit(world, 0.001f0, typemax(Float32), ray)
+        rec = hit(objects, 0.001f0, typemax(Float32), ray)
 
         if rec.ishit
             scattered = scatter(ray, rec, rng)
@@ -52,11 +65,9 @@ struct RenderSettings
     nsamples::UInt32
 end
 
-function gpurender(a, camera, width, height, scenesettings, rendersettings::RenderSettings, world, bvh)
+function gpurender(a, camera, width, height, scenesettings, rendersettings::RenderSettings, objects)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-
-    bvhworld = BVHWorld(bvh, world)
 
     rng = makeprng()
 
@@ -69,7 +80,7 @@ function gpurender(a, camera, width, height, scenesettings, rendersettings::Rend
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
             ray = getray(camera, u, v, rng)
-            col = col + color(ray, bvhworld, scenesettings, rng)
+            col = col + color(ray, objects, scenesettings, rng)
         end
 
         col /= Float32(rendersettings.nsamples)
@@ -84,19 +95,13 @@ function render(image::PPM, camera, scene::Scene, rendersettings::RenderSettings
     CuArrays.@allowscalar false
 
     pixels = CuArray{RGB}(undef, image.dimension.height, image.dimension.width)
-    objects = buildworld(scene)
-    world_d = CuArray{Sphere}(objects)
+    objects_d = CuArray{Triangle}(scene.objects)
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
     threads = (16, 16)
 
-    rng = uniformfromindex(0)
-    bvh = bvhbuilder(objects, rng)
-
-    bvh_d = CuArray{BVHNode}(bvh)
-
     CuArrays.@sync begin
-        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, rendersettings, world_d, bvh_d)
+        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, rendersettings, objects_d)
     end
 
     cpuarray = Array{RGB, 2}(pixels)
