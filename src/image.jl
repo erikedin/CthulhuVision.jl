@@ -47,7 +47,7 @@ end
 
 function examplefilename(name::AbstractString) :: String
     date = Dates.format(now(), "yyyymmdd-HHMMSS")
-    "example$(name)-$(date).ppm"
+    "$(name)-$(date).ppm"
 end
 
 end
