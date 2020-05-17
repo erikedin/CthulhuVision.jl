@@ -1,7 +1,7 @@
 module Math
 
 export Vector3, Point, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost, Transform
-export identitytransform, translation, rotation
+export identitytransform, translation, rotation, permute
 
 using CUDAnative
 using CthulhuVision.Random
@@ -41,6 +41,18 @@ end
     a / l
 end
 
+@inline function byindex(v::Vector3, index) :: Float32
+    if index == 0
+        v.x
+    elseif index == 1
+        v.y
+    else
+        v.z
+    end
+end
+
+@inline permute(v::Vector3, x, y, z) :: Vector3 = Vector3(byindex(v, x), byindex(v, y), byindex(v, z))
+
 @inline function randominunitsphere(rng::UniformRNG) :: Vector3
     p = Vector3(1.0f0, 1.0f0, 1.0f0)
 
@@ -60,6 +72,23 @@ struct Point
     y::Float32
     z::Float32
 end
+
+@inline function byindex(p::Point, index) :: Float32
+    if index == 0
+        p.x
+    elseif index == 1
+        p.y
+    else
+        p.z
+    end
+end
+
+@inline Base.:-(p::Point, v::Vector3) :: Point = Point(p.x - v.x, p.y - v.y, p.z - v.z)
+@inline Base.:-(a::Point, b::Point) :: Vector3 = Vector3(a.x - b.x, a.y - b.y, a.z - b.z)
+@inline Base.:+(a::Point, b::Vector3) :: Point = Point(a.x + b.x, a.y + b.y, a.z + b.z)
+@inline Base.abs(p::Point) :: Point = Point(abs(p.x), abs(p.y), abs(p.z))
+@inline permute(p::Point, x, y, z) :: Point = Point(byindex(p, x), byindex(p, y), byindex(p, z))
+@inline dot(a::Vector3, b::Point) :: Float32 = a.x * b.x + a.y * b.y + a.z * b.z
 
 #
 # Transformation matrix 4x4
