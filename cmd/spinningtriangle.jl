@@ -20,7 +20,7 @@ image = PPM(Dimension(width, height))
 # SceneSettings #
 #################
 
-ambientemission = RGB(0.0f0, 0.0f0, 0.0f0)
+ambientemission = RGB(0.5f0, 0.7f0, 1.0f0)
 settings = SceneSettings(ambientemission)
 
 ##########
@@ -58,7 +58,7 @@ end
 
 rendersettings = RenderSettings(10)
 
-lastframe = 99
+lastframe = 4
 
 for frame = 0:lastframe
     angle = Float32(2f0 * π) * 3f0 * Float32(frame) / Float32(lastframe)

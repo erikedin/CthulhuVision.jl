@@ -17,7 +17,7 @@ using CthulhuVision.Scenes
     rec = HitRecord()
 
     for o in objects
-        r = hit(o, tmin, tmax, ray)
+        r = hittriangle(o, tmin, tmax, ray)
 
         if r.ishit && r.t < rec.t
             rec = r
@@ -27,7 +27,7 @@ using CthulhuVision.Scenes
     rec
 end
 
-@inline function color(r::Ray, objects, settings::SceneSettings, rng::UniformRNG) :: RGB
+@inline function color(r::Ray, objects::CuDeviceArray{Triangle, 1, CUDAnative.AS.Global}, settings::SceneSettings, rng::UniformRNG) :: RGB
     maxbounces = 50
 
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
