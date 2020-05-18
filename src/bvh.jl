@@ -8,6 +8,21 @@ using CUDAnative
 struct AABB
     min::Vector3
     max::Vector3
+
+    function AABB(v1::Vector3, v2::Vector3, v3::Vector3)
+        mini = Vector3(
+            min(v1.x, v2.x, v3.x),
+            min(v1.y, v2.y, v3.y),
+            min(v1.z, v2.z, v3.z),
+        )
+        maxi = Vector3(
+            max(v1.x, v2.x, v3.x),
+            max(v1.y, v2.y, v3.y),
+            max(v1.z, v2.z, v3.z),
+        )
+
+        new(mini, maxi)
+    end
 end
 
 # Data structures:
@@ -19,7 +34,7 @@ end
 struct Hitable
     box::AABB
     triangleindex::UInt32
-    meshindex::UInt32
+    instanceindex::UInt32
 end
 
 #

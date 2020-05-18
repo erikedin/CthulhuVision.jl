@@ -43,7 +43,7 @@ module Worlds
 #       + Transform vertices into world space using
 #       + Return Triangle with transformed vertices and material
 
-export World, gettriangle
+export World, gettriangle, MeshTriangle, MeshInstance
 
 using CthulhuVision.Math
 using CthulhuVision.Triangles
@@ -56,7 +56,8 @@ struct MeshTriangle
     vertex3::UInt32
 end
 
-struct Mesh
+struct MeshInstance
+    meshindex::UInt32
     tform::Transform
     material::Material
 end
@@ -64,17 +65,17 @@ end
 struct World
     vertexes::CuDeviceArray{Vector3, 1, CUDAnative.AS.Global}
     meshtriangles::CuDeviceArray{MeshTriangle, 1, CUDAnative.AS.Global}
-    meshes::CuDeviceArray{Mesh, 1, CUDAnative.AS.Global}
+    instances::CuDeviceArray{MeshInstance, 1, CUDAnative.AS.Global}
 end
 
-@inline function gettriangle(world::World, meshindex::UInt32, triangleindex::UInt32) :: Triangle
-    @inbounds mesh = world.meshes[meshindex]
+@inline function gettriangle(world::World, instanceindex::UInt32, triangleindex::UInt32) :: Triangle
+    @inbounds instance = world.instances[instanceindex]
     @inbounds meshtriangle = world.meshtriangles[triangleindex]
-    @inbounds v1 = mesh.tform * world.vertexes[meshtriangle.vertex1]
-    @inbounds v2 = mesh.tform * world.vertexes[meshtriangle.vertex2]
-    @inbounds v3 = mesh.tform * world.vertexes[meshtriangle.vertex3]
+    @inbounds v1 = instance.tform * world.vertexes[meshtriangle.vertex1]
+    @inbounds v2 = instance.tform * world.vertexes[meshtriangle.vertex2]
+    @inbounds v3 = instance.tform * world.vertexes[meshtriangle.vertex3]
 
-    Triangle(v1, v2, v3, mesh.material)
+    Triangle(v1, v2, v3, instance.material)
 end
 
 end

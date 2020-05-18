@@ -23,17 +23,14 @@ image = PPM(Dimension(width, height))
 
 red = lambertian(RGB(0.9f0, 0.1f0, 0.1f0))
 green = lambertian(RGB(0.1f0, 0.9f0, 0.1f0))
-blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
 white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
-shiny = metal(RGB(0.7f0, 0.6f0, 0.5f0))
-grey  = lambertian(RGB(0.5f0, 0.5f0, 0.5f0))
 light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(1.0f0, 1.0f0, 1.0f0))
 
 #################
 # SceneSettings #
 #################
 
-ambientemission = RGB(0.0f0, 0.0f0, 0.0f0)
+ambientemission = RGB(0.5f0, 0.7f0, 1.0f0)
 settings = SceneSettings(ambientemission)
 
 ##########
@@ -55,49 +52,78 @@ camera = FovCamera(lookfrom, lookat, vup, vfov, aspect, aperture, focusdist)
 # Construct scene #
 ###################
 
-redwall = uniformwall(555f0, 555f0, 1000, red)
-redtransform = translation(0f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
-redwallnode = transform([redwall], redtransform)
+scene = Scene()
 
-greenwall = uniformwall(555f0, 555f0, 1000, green)
-greentransform = translation(555f0, 0f0, 0f0) * rotation(Float32(π / 2f0), Vec3(0f0, 1f0, 0f0)) 
-greenwallnode = transform([greenwall], greentransform)
 
-whitewall = uniformwall(555f0, 555f0, 1000, white)
+wallmesh = HostMesh(
+    # Vertexes
+    [
+        Vector3(-277.5f0, -277.5f0, 0f0),
+        Vector3( 277.5f0, -277.5f0, 0f0),
+        Vector3( 277.5f0,  277.5f0, 0f0),
+        Vector3(-277.5f0,  277.5f0, 0f0),
+    ],
+    
+    # Triangles
+    [
+        MeshTriangle(1, 2, 4),
+        MeshTriangle(2, 3, 4),
+    ]
+)
+wallmeshindex = addmesh!(scene, wallmesh)
 
-toptransform = translation(0f0, 555f0, 0f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
-topwallnode = transform([whitewall], toptransform)
+# This creates a Hitable for each triangle, to be used when building the
+# acceleration structure.
 
-bottomtransform = rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
-bottomwallnode = transform([whitewall], bottomtransform)
+# Bottom wall
+addinstance!(
+    scene,
+    MeshInstance(
+        wallmeshindex,
+        white,
+        translation(Vector3(0f0, -277.5f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(1f0, 0f0, 0f0)),
+    )
+)
 
-backtransform = translation(0f0, 0f0, -555f0)
-backwallnode = transform([whitewall], backtransform)
+# Back wall
+addinstance!(
+    scene,
+    MeshInstance(
+        wallmeshindex,
+        white,
+        translation(Vector3(0f0, 0f0, -555f0)),
+    )
+)
 
-lightbox = uniformwall(250f0, 250f0, 1000, light)
-lightboxtransform = translation(177f0, 554f0, -177f0) * rotation(Float32(-π / 2f0), Vec3(1f0, 0f0, 0f0))
-lightboxnode = transform([lightbox], lightboxtransform)
+# Top wall
+addinstance!(
+    scene,
+    MeshInstance(
+        wallmeshindex,
+        white,
+        translation(Vector3(0f0, 277.5f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(1f0, 0f0, 0f0)),
+    )
+)
 
-tallblock = block(165f0, 330f0, 165f0, 100, white)
-tallblocktransform = translation(70f0, 0f0, -460f0) * rotation(Float32(0.05 * 2f0 * π), Vec3(0f0, 1f0, 0f0))
-tallblocknode = transform([tallblock], tallblocktransform)
+# Left wall
+addinstance!(
+    scene,
+    MeshInstance(
+        wallmeshindex,
+        white,
+        translation(Vector3(-277.5f0, 0f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(0f0, 1f0, 0f0)),
+    )
+)
 
-shortblock = block(165f0, 165f0, 165f0, 100, white)
-shortblocktransform = translation(320f0, 0f0, -260f0) * rotation(Float32(-0.0617f0 * 2f0 * π), Vec3(0f0, 1f0, 0f0))
-shortblocknode = transform([shortblock], shortblocktransform)
-
-rootnode = group([
-    redwallnode,
-    greenwallnode,
-    topwallnode,
-    bottomwallnode,
-    backwallnode,
-    lightboxnode,
-    tallblocknode,
-    shortblocknode,
-])
-
-scene = Scene(rootnode, settings)
+# Right wall
+addinstance!(
+    scene,
+    MeshInstance(
+        wallmeshindex,
+        white,
+        translation(Vector3(277.5f0, 0f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(0f0, 1f0, 0f0)),
+    )
+)
 
 ##################
 # Perform render #

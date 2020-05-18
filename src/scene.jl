@@ -12,16 +12,22 @@ struct SceneSettings
     ambientemission::RGB
 end
 
+struct MeshLocation
+    first::UInt32
+    last::UInt32
+end
+
 struct Scene
     vertexes::Vector{Vector3}
     meshtriangles::Vector{MeshTriangle}
-    meshes::Vector{Mesh}
+    meshes::Vector{MeshLocation}
+    instances::Vector{MeshInstance}
+    hitables::Vector{Hitable}
 
-    Scene() = new([], [], [])
+    Scene() = new([], [], [], [], [])
 end
 
-struct HostMesh
-    material::Material
+struct Mesh
     vertexes::Vector{Vector3}
     triangles::Vector{MeshTriangle}
 end
@@ -34,18 +40,42 @@ function offsetmeshtriangle(mt::MeshTriangle, vertexoffset::UInt32) :: MeshTrian
     )
 end
 
-function addvertices!(scene::Scene, mesh::HostMesh)
+function addmesh!(scene::Scene, mesh::Mesh) :: UInt32
     # MeshTriangle indexes are one-indexed when used as relative indexes inside a mesh.
+    # Therefore, we offset all indexes by the existing length of the vertexes vector.
     vertexoffset = UInt32(length(scene.vertexes))
     append!(scene.vertexes, mesh.vertexes)
 
     meshtriangles = [offsetmeshtriangle(mt, vertexoffset) for mt in mesh.triangles]
+    firstmeshtriangle = length(scene.meshtriangles) + 1
+    lastmeshtriangle = firstmeshtriangle + length(meshtriangles) - 1
     append!(scene.meshtriangles, meshtriangles)
+
+    location = MeshLocation(firstmeshtriangle, lastmeshtriangle)
+    push!(scene.meshes, location)
+    meshindex = length(scene.meshes)
+
+    meshindex
 end
 
-function addinstance!(scene::Scene, hostmesh::HostMesh, tform::Transform)
-    mesh = Mesh(hostmesh.materil, tform)
-    push!(scene.meshes, mesh)
+function addinstance!(scene::Scene, instance::MeshInstance)
+    push!(scene.instances, instance)
+    instanceindex = length(scene.instances)
+
+    # This tells us where all the triangle indexes are.
+    locations = scene.meshes[instance.meshindex]
+
+    for index = locations.first:locations.last
+        meshtriangle = scene.meshtriangles[index]
+        v1 = instance.tform * scene.vertexes[meshtriangle.vertex1]
+        v2 = instance.tform * scene.vertexes[meshtriangle.vertex2]
+        v3 = instance.tform * scene.vertexes[meshtriangle.vertex3]
+
+        box = AABB(v1, v2, v3)
+
+        hitable = Hitable(box, index, instanceindex)
+        push!(scene.hitables, hitable)
+    end
 end
 
 end
