@@ -1,5 +1,8 @@
 module BVH
 
+using StaticArrays
+using CUDAnative
+
 # Data structures:
 # Hitable:
 #   Contains enough data an object to use in BVH building. Contains:
@@ -7,48 +10,6 @@ module BVH
 #   - An index to the owning triangle mesh
 #   - An index to the triangle inside the mesh
 #
-# Vertex:
-#   A 3D point. A Vector3? A Point? Vector3 until we fix all the Vector3/Point stuff
-#   - x, y, z
-#
-# Triangle:
-#   Is a triangle, with vertices in world space and material
-#   - Vertex 1
-#   - Vertex 2
-#   - Vertex 3
-#   - Material
-#
-# MeshTriangle:
-#   Represents a triangle, but actually only indexes the vertices.
-#   - Index to vertex 1
-#   - Index to vertex 2
-#   - Index to vertex 3
-# 
-# Mesh:
-#   A triangle mesh.
-#   - Transformation to be applied to the mesh
-#   - Material
-#   - Start index for MeshTriangles
-#   - End index for MeshTriangles
-#
-# World:
-#   Contains all triangle data in the entire scene.
-#   - A list of vertices
-#   - A list of MeshTriangles
-#   - A list of Mesh's
-#   Methods:
-#   - gettriangle: Get Triangle in world space
-#       Input:
-#           - World
-#           - Mesh index
-#           - Triangle index
-#       + Get mesh from mesh index
-#       + Get transform from mesh
-#       + Get material from mesh
-#       + Get MeshTriangle from triangle index
-#       + Get vertices from MeshTriangles indexes
-#       + Transform vertices into world space using
-#       + Return Triangle with transformed vertices and material
 #
 # BVHNode:
 #   Is a node in the hierarchical BVH tree. Is either a leaf node or a parent node.
@@ -64,15 +25,28 @@ module BVH
 #   object.
 #   Contains:
 #   - A list of BVHNodes
-#
-# VisitationStack:
-#   A stack wrapper around a thread local array
-#   - A thread local array of fixed size
-#   - Size
+
+# VisitationStack is a stack wrapper around a thread local array
+#   - array: A thread local array of fixed size
+#   - len: length
 #   Methods:
-#       + push: a node index
-#       + pop: a node index
-#
+#       + push!: a node index
+#       + pop!: a node index
+mutable struct VisitationStack
+    array::MVector{30, UInt32}
+    len::UInt32
+end
+
+@inline function push!(s::VisitationStack, index::UInt32)
+    s.len += 1
+    @inbounds s.array[s.len] = index
+end
+
+@inline function pop!(s::VisitationStack) :: UInt32
+    s.len -= 1
+    @inbounds s.array[s.len + 1]
+end
+
 # Building root node algorithm:
 # Input:
 #   - List of all Hitables in the scene
