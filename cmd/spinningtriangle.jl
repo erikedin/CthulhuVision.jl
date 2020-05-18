@@ -59,7 +59,7 @@ end
 
 rendersettings = RenderSettings(10)
 
-lastframe = 720
+lastframe = 1
 
 for frame = 0:lastframe
     angle = Float32(2f0 * π) * 3f0 * Float32(frame) / Float32(lastframe)

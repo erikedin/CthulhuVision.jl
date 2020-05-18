@@ -1,7 +1,14 @@
 module BVH
 
+using CthulhuVision.Light
+
 using StaticArrays
 using CUDAnative
+
+struct AABB
+    min::Vector3
+    max::Vector3
+end
 
 # Data structures:
 # Hitable:
@@ -9,7 +16,12 @@ using CUDAnative
 #   - A bounding box
 #   - An index to the owning triangle mesh
 #   - An index to the triangle inside the mesh
-#
+struct Hitable
+    box::AABB
+    triangleindex::UInt32
+    meshindex::UInt32
+end
+
 #
 # BVHNode:
 #   Is a node in the hierarchical BVH tree. Is either a leaf node or a parent node.
