@@ -110,7 +110,7 @@ addinstance!(
     scene,
     MeshInstance(
         wallmeshindex,
-        white,
+        red,
         translation(Vector3(-277.5f0, 0f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(0f0, 1f0, 0f0)),
     )
 )
@@ -120,7 +120,7 @@ addinstance!(
     scene,
     MeshInstance(
         wallmeshindex,
-        white,
+        green,
         translation(Vector3(277.5f0, 0f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(0f0, 1f0, 0f0)),
     )
 )
