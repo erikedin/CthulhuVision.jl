@@ -12,8 +12,8 @@ using CthulhuVision.Random
 # Define image #
 ################
 
-width = 512
-height = 512
+width = 16
+height = 16
 image = PPM(Dimension(width, height))
 
 ####################
@@ -39,8 +39,8 @@ settings = SceneSettings(ambientemission)
 aspect = Float32(image.dimension.width / image.dimension.height)
 vfov = 40.0f0
 
-lookfrom = Vector3(277.5f0, 277.5f0, 800.0f0)
-lookat = Vector3(277.5f0, 277.5f0, 0.0f0)
+lookfrom = Vector3(0f0, 0f0, 800.0f0)
+lookat = Vector3(0f0, 0f0, 0.0f0)
 vup = Vector3(0.0f0, 1.0f0, 0.0f0)
 focusdist = 10.0f0
 aperture = 0.0f0
@@ -128,7 +128,7 @@ addinstance!(
 # Perform render #
 ##################
 
-rendersettings = RenderSettings(100)
+rendersettings = RenderSettings(1)
 
 render(image, camera, scene, rendersettings)
 

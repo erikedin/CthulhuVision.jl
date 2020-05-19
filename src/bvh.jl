@@ -5,6 +5,7 @@ using CthulhuVision.Random
 using CthulhuVision.Materials
 using CthulhuVision.Worlds
 using CthulhuVision.Math
+using CthulhuVision.Triangles
 
 using StaticArrays
 using CUDAnative
@@ -51,29 +52,38 @@ struct AABB
 end
 
 @inline function hitbox(aabb::AABB, ray::Ray, tmin::Float32, tmax::Float32) :: Bool
+    @cuprintf("hitbox tmin %f     tmax %f\n", tmin, tmax)
     inversedistancex = 1.0f0 / direction(ray).x
     tx0 = (aabb.min.x - origin(ray).x) * inversedistancex
     tx1 = (aabb.max.x - origin(ray).x) * inversedistancex
+    @cuprintf("hitbox tx0 %f    tx1 %f\n", tx0, tx1)
     if inversedistancex < 0.0f0
         tx0, tx1 = tx1, tx0
+        @cuprintf("hitbox inverse tx0 %f    tx1 %f\n", tx0, tx1)
     end
 
     inversedistancey = 1.0f0 / direction(ray).y
     ty0 = (aabb.min.y - origin(ray).y) * inversedistancey
     ty1 = (aabb.max.y - origin(ray).y) * inversedistancey
+    @cuprintf("hitbox ty0 %f    ty1 %f\n", ty0, ty1)
     if inversedistancey < 0.0f0
         ty0, ty1 = ty1, ty0
+        @cuprintf("hitbox inverse ty0 %f    ty1 %f\n", ty0, ty1)
     end
 
     inversedistancez = 1.0f0 / direction(ray).z
     tz0 = (aabb.min.z - origin(ray).z) * inversedistancez
     tz1 = (aabb.max.z - origin(ray).z) * inversedistancez
+    @cuprintf("hitbox tz0 %f    tz1 %f\n", tz0, tz1)
     if inversedistancez < 0.0f0
         tz0, tz1 = tz1, tz0
+        @cuprintf("hitbox inverse tz0 %f    tz1 %f\n", tz0, tz1)
     end
 
     t0 = max(tx0, ty0, tz0, tmin)
     t1 = min(tx1, ty1, tz1, tmax)
+
+    @cuprintf("hitbox t0 %f     t1 %f\n", t0, t1)
 
     t0 < t1
 end
@@ -120,9 +130,9 @@ struct BVHNode
     end
 end
 
-@inline isleaf(node::BVHNode) = (node.left & 0x8000_0000) == 1
-@inline getinstanceindex(node::BVHNode) = node.left & 0x7FFF_FFFF
-@inline gettriangleindex(node::BVHNode) = node.right
+@inline isleaf(node::BVHNode) :: Bool = (node.left & 0x8000_0000) == 1
+@inline getinstanceindex(node::BVHNode) :: UInt32 = node.left & 0x7FFF_FFFF
+@inline gettriangleindex(node::BVHNode) :: UInt32 = node.right
 
 # BVHAcceleration:
 #   Contains all accelration data and can be ask if it was hit.
@@ -268,23 +278,31 @@ end
     visit = VisitationStack()
     pushnode!(visit, UInt32(1))
 
-    rec = HitRecord()
+    closesthit = HitRecord()
 
     while !isempty(visit)
         # Get the next BVHNode to visit.
         thisindex = popnode!(visit)
-        node = acceleration.nodes[thisindex]
+        @inbounds node = acceleration.nodes[thisindex]
+        @cuprintf("Node %x: Left %x     Right %x\n", thisindex, node.left, node.right)
+        @cuprintf("Box min %f %f %f     Box max %f %f %f\n", node.box.min.x, node.box.min.y, node.box.min.z, node.box.max.x, node.box.max.y, node.box.max.z)
+        @cuprintf("Ray origin %f %f %f         direction %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z)
 
         if hitbox(node.box, ray, tmin, tmax)
             if isleaf(node)
                 instanceindex = getinstanceindex(node)
                 triangleindex = gettriangleindex(node)
+                @cuprintf("Leaf node: Instance %z    Triangle %x", instanceindex, triangleindex)
                 triangle = gettriangle(world, instanceindex, triangleindex)
-                trianglerec = hittriangle(triangle, tmin, tmax, ray)
+                thisrec = hittriangle(triangle, tmin, tmax, ray)
+
+                if thisrec.ishit
+                    @cuprintf("Triangle hit: Instance %x   Triangle %x", instanceindex, triangleindex)
+                end
 
                 # Store the hit if it was closer than the current closest hit.
-                if trianglerec.ishit && trianglerec.t < rec.t
-                    rec = trianglerec
+                if thisrec.ishit && thisrec.t < closesthit.t
+                    closesthit = thisrec
                 end
             else
                 pushnode!(visit, node.left)
@@ -293,7 +311,7 @@ end
         end
     end
 
-    rec
+    closesthit
 end
 
 end
