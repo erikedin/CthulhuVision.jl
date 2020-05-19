@@ -12,6 +12,8 @@ using CthulhuVision.Camera
 using CthulhuVision.Materials
 using CthulhuVision.Triangles
 using CthulhuVision.Scenes
+using CthulhuVision.BVH
+using CthulhuVision.Worlds
 
 @inline function color(r::Ray, acceleration::BVHAcceleration, world::World, settings::SceneSettings, rng::UniformRNG) :: RGB
     maxbounces = 50

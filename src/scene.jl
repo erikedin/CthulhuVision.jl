@@ -3,10 +3,12 @@ module Scenes
 using CthulhuVision.Light
 using CthulhuVision.Math
 using CthulhuVision.Triangles
-using CthulhuVision.World
+using CthulhuVision.Worlds
 using CthulhuVision.Materials
+using CthulhuVision.BVH
 
-export Scene, SceneSettings
+export Scene, SceneSettings, Mesh
+export addmesh!, addinstance!
 
 struct SceneSettings
     ambientemission::RGB
@@ -23,8 +25,9 @@ struct Scene
     meshes::Vector{MeshLocation}
     instances::Vector{MeshInstance}
     hitables::Vector{Hitable}
+    settings::SceneSettings
 
-    Scene() = new([], [], [], [], [])
+    Scene(settings::SceneSettings) = new([], [], [], [], [], settings)
 end
 
 struct Mesh

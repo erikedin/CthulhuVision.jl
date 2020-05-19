@@ -4,9 +4,13 @@ using CthulhuVision.Light
 using CthulhuVision.Random
 using CthulhuVision.Materials
 using CthulhuVision.Worlds
+using CthulhuVision.Math
 
 using StaticArrays
 using CUDAnative
+
+export Hitable, BVHNode, BVHAcceleration, AABB
+export buildacceleration, hitacceleration
 
 struct AABB
     min::Vector3
@@ -116,8 +120,8 @@ struct BVHNode
     end
 end
 
-@inline isleaf(node::BVHNode) = (node.left & 0x80000000) == 1
-@inline getinstanceindex(node::BVHNode) = node.left & 0x7F00_0000
+@inline isleaf(node::BVHNode) = (node.left & 0x8000_0000) == 1
+@inline getinstanceindex(node::BVHNode) = node.left & 0x7FFF_FFFF
 @inline gettriangleindex(node::BVHNode) = node.right
 
 # BVHAcceleration:
@@ -145,12 +149,12 @@ mutable struct VisitationStack
     VisitationStack() = new(zeros(MVector{30, UInt32}), 0)
 end
 
-@inline function push!(s::VisitationStack, index::UInt32)
+@inline function pushnode!(s::VisitationStack, index::UInt32)
     s.len += 1
     @inbounds s.array[s.len] = index
 end
 
-@inline function pop!(s::VisitationStack) :: UInt32
+@inline function popnode!(s::VisitationStack) :: UInt32
     s.len -= 1
     @inbounds s.array[s.len + 1]
 end
@@ -183,11 +187,11 @@ function allocatebvhnode(nodes::Vector{BVHNode}, node::BVHNode) :: UInt32
     length(nodes)
 end
 
-function buildbvhnode(hitables::AbstractVector{Hitable}, nodes::Vector{BVHNode}, start::UInt32, last::UInt32, rng::UniformRNG) :: BVHNode
+function buildbvhnode(hitables::AbstractVector{Hitable}, nodes::Vector{BVHNode}, start::UInt32, last::UInt32, rng::UniformRNG) :: UInt32
     isthisaleaf = start == last
     if isthisaleaf
         hitable = hitables[start]
-        leafindex = allocatebvhnode(BVHNode(hitable))
+        leafindex = allocatebvhnode(nodes, BVHNode(hitable))
         leafindex
     else
         # Allocate an empty node for this parent node, so it
@@ -231,7 +235,9 @@ end
 function buildacceleration(hitables::AbstractVector{Hitable}, rng::UniformRNG) :: AbstractVector{BVHNode}
     nodes = Vector{BVHNode}()
 
-    buildbvhnode(hitables, nodes, 1, length(nodes), rng)
+    buildbvhnode(hitables, nodes, UInt32(1), UInt32(length(hitables)), rng)
+
+    nodes
 end
 
 # Hit algorithm:
@@ -260,13 +266,13 @@ end
 
 @inline function hitacceleration(acceleration::BVHAcceleration, tmin::Float32, tmax::Float32, ray::Ray, world::World) :: HitRecord
     visit = VisitationStack()
-    push!(visit, UInt32(1))
+    pushnode!(visit, UInt32(1))
 
     rec = HitRecord()
 
     while !isempty(visit)
         # Get the next BVHNode to visit.
-        thisindex = pop!(visit)
+        thisindex = popnode!(visit)
         node = acceleration.nodes[thisindex]
 
         if hitbox(node.box, ray, tmin, tmax)
@@ -281,8 +287,8 @@ end
                     rec = trianglerec
                 end
             else
-                push!(visit, node.left)
-                push!(visit, node.right)
+                pushnode!(visit, node.left)
+                pushnode!(visit, node.right)
             end
         end
     end

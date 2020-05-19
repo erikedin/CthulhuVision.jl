@@ -173,11 +173,11 @@ function identitytransform() :: Transform
     )
 end
 
-function translation(x::Float32, y::Float32, z::Float32) :: Transform
+function translation(v::Vector3) :: Transform
     Transform(
-        1f0, 0f0, 0f0, x,
-        0f0, 1f0, 0f0, y,
-        0f0, 0f0, 1f0, z,
+        1f0, 0f0, 0f0, v.x,
+        0f0, 1f0, 0f0, v.y,
+        0f0, 0f0, 1f0, v.z,
         0f0, 0f0, 0f0, 0f0,
     )
 end

@@ -58,8 +58,8 @@ end
 
 struct MeshInstance
     meshindex::UInt32
-    tform::Transform
     material::Material
+    tform::Transform
 end
 
 struct World

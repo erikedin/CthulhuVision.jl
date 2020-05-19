@@ -4,9 +4,8 @@ using CthulhuVision.Light
 using CthulhuVision.Materials
 using CthulhuVision.Rendering
 using CthulhuVision.Camera
-using CthulhuVision.Spheres
+using CthulhuVision.Worlds
 using CthulhuVision.Scenes
-using CthulhuVision.Shapes
 using CthulhuVision.Random
 
 ################
@@ -40,9 +39,9 @@ settings = SceneSettings(ambientemission)
 aspect = Float32(image.dimension.width / image.dimension.height)
 vfov = 40.0f0
 
-lookfrom = Vec3(277.5f0, 277.5f0, 800.0f0)
-lookat = Vec3(277.5f0, 277.5f0, 0.0f0)
-vup = Vec3(0.0f0, 1.0f0, 0.0f0)
+lookfrom = Vector3(277.5f0, 277.5f0, 800.0f0)
+lookat = Vector3(277.5f0, 277.5f0, 0.0f0)
+vup = Vector3(0.0f0, 1.0f0, 0.0f0)
 focusdist = 10.0f0
 aperture = 0.0f0
 
@@ -52,10 +51,10 @@ camera = FovCamera(lookfrom, lookat, vup, vfov, aspect, aperture, focusdist)
 # Construct scene #
 ###################
 
-scene = Scene()
+scene = Scene(settings)
 
 
-wallmesh = HostMesh(
+wallmesh = Mesh(
     # Vertexes
     [
         Vector3(-277.5f0, -277.5f0, 0f0),
