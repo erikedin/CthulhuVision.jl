@@ -26,6 +26,7 @@ using CthulhuVision.Worlds
         rec = hitacceleration(acceleration, 0.001f0, typemax(Float32), ray, world)
 
         if rec.ishit
+            # @cuprintf("Hit at t = %f\n", rec.t)
             scattered = scatter(ray, rec, rng)
             if !scattered.isreflected
                 break
@@ -60,6 +61,10 @@ function gpurender(a, camera, width, height, scenesettings, rendersettings::Rend
 
     acceleration = BVHAcceleration(bvhnodes)
     world = World(vertexes, meshtriangles, instances)
+
+    if x == 1 && y == 1
+        @cuprintf("World: # vertex %ld    # triangles %ld     # instances %ld\n", length(world.vertexes), length(world.meshtriangles), length(world.instances))
+    end
 
     if x <= width && y <= height
         col = RGB(0.0f0, 0.0f0, 0.0f0)

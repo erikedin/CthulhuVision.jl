@@ -143,7 +143,7 @@ end
 end
 
 @inline function Base.:*(a::Transform, b::Vector3) :: Vector3
-    w = 0f0
+    w = 1f0
     x = a.e11 * b.x + a.e12 * b.y + a.e13 * b.z + a.e14 * w
     y = a.e21 * b.x + a.e22 * b.y + a.e23 * b.z + a.e24 * w
     z = a.e31 * b.x + a.e32 * b.y + a.e33 * b.z + a.e34 * w
@@ -178,7 +178,7 @@ function translation(v::Vector3) :: Transform
         1f0, 0f0, 0f0, v.x,
         0f0, 1f0, 0f0, v.y,
         0f0, 0f0, 1f0, v.z,
-        0f0, 0f0, 0f0, 0f0,
+        0f0, 0f0, 0f0, 1f0,
     )
 end
 

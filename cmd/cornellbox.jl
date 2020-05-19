@@ -12,8 +12,8 @@ using CthulhuVision.Random
 # Define image #
 ################
 
-width = 16
-height = 16
+width = 512
+height = 512
 image = PPM(Dimension(width, height))
 
 ####################
@@ -22,8 +22,8 @@ image = PPM(Dimension(width, height))
 
 red = lambertian(RGB(0.9f0, 0.1f0, 0.1f0))
 green = lambertian(RGB(0.1f0, 0.9f0, 0.1f0))
-white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
-light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(1.0f0, 1.0f0, 1.0f0))
+blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
+white = lambertian(RGB(0.2f0, 0.8f0, 0.2f0))
 
 #################
 # SceneSettings #
@@ -75,34 +75,34 @@ wallmeshindex = addmesh!(scene, wallmesh)
 # acceleration structure.
 
 # Bottom wall
-addinstance!(
-    scene,
-    MeshInstance(
-        wallmeshindex,
-        white,
-        translation(Vector3(0f0, -277.5f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(1f0, 0f0, 0f0)),
-    )
-)
+# addinstance!(
+#     scene,
+#     MeshInstance(
+#         wallmeshindex,
+#         blue,
+#         translation(Vector3(0f0, -277.5f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(1f0, 0f0, 0f0)),
+#     )
+# )
 
 # Back wall
 addinstance!(
     scene,
     MeshInstance(
         wallmeshindex,
-        white,
+        blue,
         translation(Vector3(0f0, 0f0, -555f0)),
     )
 )
 
 # Top wall
-addinstance!(
-    scene,
-    MeshInstance(
-        wallmeshindex,
-        white,
-        translation(Vector3(0f0, 277.5f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(1f0, 0f0, 0f0)),
-    )
-)
+# addinstance!(
+#     scene,
+#     MeshInstance(
+#         wallmeshindex,
+#         white,
+#         translation(Vector3(0f0, 277.5f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(1f0, 0f0, 0f0)),
+#     )
+# )
 
 # Left wall
 addinstance!(
@@ -110,27 +110,27 @@ addinstance!(
     MeshInstance(
         wallmeshindex,
         red,
-        translation(Vector3(-277.5f0, 0f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(0f0, 1f0, 0f0)),
+        translation(Vector3(-300.5f0, -50f0, -10f0)) * rotation(Float32(π) * 0.3f0, Vector3(0f0, 1f0, 0f0)),
+        # translation(Vector3(-277.5f0, 0f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(0f0, 1f0, 0f0)),
     )
 )
 
 # Right wall
-addinstance!(
-    scene,
-    MeshInstance(
-        wallmeshindex,
-        green,
-        translation(Vector3(277.5f0, 0f0, -277.5f0)) * rotation(Float32(2.0 * π) / 2f0, Vector3(0f0, 1f0, 0f0)),
-    )
-)
+# addinstance!(
+#     scene,
+#     MeshInstance(
+#         wallmeshindex,
+#         green,
+#         translation(Vector3(277.5f0, 0f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(0f0, 1f0, 0f0)),
+#     )
+# )
 
 ##################
 # Perform render #
 ##################
 
-rendersettings = RenderSettings(1)
+rendersettings = RenderSettings(10)
 
 render(image, camera, scene, rendersettings)
 
 saveimage(image, examplefilename("cornellbox"))
-

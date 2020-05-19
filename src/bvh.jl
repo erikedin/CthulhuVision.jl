@@ -19,14 +19,14 @@ struct AABB
 
     function AABB(v1::Vector3, v2::Vector3, v3::Vector3)
         mini = Vector3(
-            min(v1.x, v2.x, v3.x),
-            min(v1.y, v2.y, v3.y),
-            min(v1.z, v2.z, v3.z),
+            min(v1.x, v2.x, v3.x) - 0.01f0,
+            min(v1.y, v2.y, v3.y) - 0.01f0,
+            min(v1.z, v2.z, v3.z) - 0.01f0,
         )
         maxi = Vector3(
-            max(v1.x, v2.x, v3.x),
-            max(v1.y, v2.y, v3.y),
-            max(v1.z, v2.z, v3.z),
+            max(v1.x, v2.x, v3.x) + 0.01f0,
+            max(v1.y, v2.y, v3.y) + 0.01f0,
+            max(v1.z, v2.z, v3.z) + 0.01f0,
         )
 
         new(mini, maxi)
@@ -52,38 +52,38 @@ struct AABB
 end
 
 @inline function hitbox(aabb::AABB, ray::Ray, tmin::Float32, tmax::Float32) :: Bool
-    @cuprintf("hitbox tmin %f     tmax %f\n", tmin, tmax)
+    # @cuprintf("hitbox tmin %f     tmax %f\n", tmin, tmax)
     inversedistancex = 1.0f0 / direction(ray).x
     tx0 = (aabb.min.x - origin(ray).x) * inversedistancex
     tx1 = (aabb.max.x - origin(ray).x) * inversedistancex
-    @cuprintf("hitbox tx0 %f    tx1 %f\n", tx0, tx1)
+    # @cuprintf("hitbox tx0 %f    tx1 %f\n", tx0, tx1)
     if inversedistancex < 0.0f0
         tx0, tx1 = tx1, tx0
-        @cuprintf("hitbox inverse tx0 %f    tx1 %f\n", tx0, tx1)
+        # @cuprintf("hitbox inverse tx0 %f    tx1 %f\n", tx0, tx1)
     end
 
     inversedistancey = 1.0f0 / direction(ray).y
     ty0 = (aabb.min.y - origin(ray).y) * inversedistancey
     ty1 = (aabb.max.y - origin(ray).y) * inversedistancey
-    @cuprintf("hitbox ty0 %f    ty1 %f\n", ty0, ty1)
+    # @cuprintf("hitbox ty0 %f    ty1 %f\n", ty0, ty1)
     if inversedistancey < 0.0f0
         ty0, ty1 = ty1, ty0
-        @cuprintf("hitbox inverse ty0 %f    ty1 %f\n", ty0, ty1)
+        # @cuprintf("hitbox inverse ty0 %f    ty1 %f\n", ty0, ty1)
     end
 
     inversedistancez = 1.0f0 / direction(ray).z
     tz0 = (aabb.min.z - origin(ray).z) * inversedistancez
     tz1 = (aabb.max.z - origin(ray).z) * inversedistancez
-    @cuprintf("hitbox tz0 %f    tz1 %f\n", tz0, tz1)
+    # @cuprintf("hitbox tz0 %f    tz1 %f\n", tz0, tz1)
     if inversedistancez < 0.0f0
         tz0, tz1 = tz1, tz0
-        @cuprintf("hitbox inverse tz0 %f    tz1 %f\n", tz0, tz1)
+        # @cuprintf("hitbox inverse tz0 %f    tz1 %f\n", tz0, tz1)
     end
 
     t0 = max(tx0, ty0, tz0, tmin)
     t1 = min(tx1, ty1, tz1, tmax)
 
-    @cuprintf("hitbox t0 %f     t1 %f\n", t0, t1)
+    # @cuprintf("hitbox t0 %f     t1 %f\n", t0, t1)
 
     t0 < t1
 end
@@ -111,28 +111,31 @@ struct BVHNode
     box::AABB
     left::UInt32
     right::UInt32
+    isleafnode::Bool
 
     function BVHNode(hitable::Hitable)
-        left = hitable.instanceindex | 0x8000_0000
+        left = hitable.instanceindex
         right = hitable.triangleindex
-        new(hitable.box, left, right)
+        new(hitable.box, left, right, true)
     end
 
     function BVHNode(nodes::Vector{BVHNode}, leftindex::UInt32, rightindex::UInt32)
         leftbox = nodes[leftindex].box
         rightbox = nodes[rightindex].box
         box = AABB(leftbox, rightbox)
-        new(box, leftindex, rightindex)
+        new(box, leftindex, rightindex, false)
     end
 
     function BVHNode()
-        new(AABB(), UInt32(0), UInt32(0))
+        new(AABB(), UInt32(0), UInt32(0), false)
     end
 end
 
-@inline isleaf(node::BVHNode) :: Bool = (node.left & 0x8000_0000) == 1
-@inline getinstanceindex(node::BVHNode) :: UInt32 = node.left & 0x7FFF_FFFF
+@inline isleaf(node::BVHNode) :: Bool = node.isleafnode
+@inline getinstanceindex(node::BVHNode) :: UInt32 = node.left
 @inline gettriangleindex(node::BVHNode) :: UInt32 = node.right
+@inline getleft(node::BVHNode) :: UInt32 = node.left
+@inline getright(node::BVHNode) :: UInt32 = node.right
 
 # BVHAcceleration:
 #   Contains all accelration data and can be ask if it was hit.
@@ -201,7 +204,9 @@ function buildbvhnode(hitables::AbstractVector{Hitable}, nodes::Vector{BVHNode},
     isthisaleaf = start == last
     if isthisaleaf
         hitable = hitables[start]
-        leafindex = allocatebvhnode(nodes, BVHNode(hitable))
+        node = BVHNode(hitable)
+        leafindex = allocatebvhnode(nodes, node)
+        # println("Leaf node $leafindex: $node")
         leafindex
     else
         # Allocate an empty node for this parent node, so it
@@ -284,30 +289,47 @@ end
         # Get the next BVHNode to visit.
         thisindex = popnode!(visit)
         @inbounds node = acceleration.nodes[thisindex]
-        @cuprintf("Node %x: Left %x     Right %x\n", thisindex, node.left, node.right)
-        @cuprintf("Box min %f %f %f     Box max %f %f %f\n", node.box.min.x, node.box.min.y, node.box.min.z, node.box.max.x, node.box.max.y, node.box.max.z)
-        @cuprintf("Ray origin %f %f %f         direction %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z)
+
+        # if thisindex == 1
+            # @cuprintf("Node %x: Left %x     Right %x\n", thisindex, node.left, node.right)
+            # @cuprintf("Box min %f %f %f     Box max %f %f %f\n", node.box.min.x, node.box.min.y, node.box.min.z, node.box.max.x, node.box.max.y, node.box.max.z)
+            # @cuprintf("Ray origin %f %f %f         direction %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z)
+        # end
 
         if hitbox(node.box, ray, tmin, tmax)
+            # @cuprintf("Did hit this box\n")
+            # @cuprintf("Node %x: Left %x     Right %x\n", thisindex, node.left, node.right)
+            # @cuprintf("Box min %f %f %f     Box max %f %f %f\n", node.box.min.x, node.box.min.y, node.box.min.z, node.box.max.x, node.box.max.y, node.box.max.z)
+            # @cuprintf("Ray origin %f %f %f         direction %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z)
+            # @cuprintf("\n")
             if isleaf(node)
                 instanceindex = getinstanceindex(node)
                 triangleindex = gettriangleindex(node)
-                @cuprintf("Leaf node: Instance %z    Triangle %x", instanceindex, triangleindex)
+                # @cuprintf("Leaf node: Instance %d    Triangle %d\n", instanceindex, triangleindex)
                 triangle = gettriangle(world, instanceindex, triangleindex)
                 thisrec = hittriangle(triangle, tmin, tmax, ray)
 
-                if thisrec.ishit
-                    @cuprintf("Triangle hit: Instance %x   Triangle %x", instanceindex, triangleindex)
-                end
+                # if thisrec.ishit
+                #     @cuprintf("Triangle hit: Instance %d   Triangle %d\n", instanceindex, triangleindex)
+                #     @cuprintf("Triangle %f %f %f   %f %f %f    %f %f %f\n", triangle.a.x, triangle.a.y, triangle.a.z, triangle.b.x, triangle.b.y, triangle.b.z, triangle.c.x, triangle.c.y, triangle.c.z)
+                # end
 
                 # Store the hit if it was closer than the current closest hit.
                 if thisrec.ishit && thisrec.t < closesthit.t
+                    # @cuprintf("Closest hit at t %f\n", thisrec.t)
                     closesthit = thisrec
                 end
             else
-                pushnode!(visit, node.left)
-                pushnode!(visit, node.right)
+                # @cuprintf("Push nodes left %d and right %d\n", node.left, node.right)
+                pushnode!(visit, getleft(node))
+                pushnode!(visit, getright(node))
             end
+        # else
+        #     @cuprintf("Did not hit this box\n")
+        #     @cuprintf("Node %x: Left %x     Right %x\n", thisindex, node.left, node.right)
+        #     @cuprintf("Box min %f %f %f     Box max %f %f %f\n", node.box.min.x, node.box.min.y, node.box.min.z, node.box.max.x, node.box.max.y, node.box.max.z)
+        #     @cuprintf("Ray origin %f %f %f         direction %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z)
+        #     @cuprintf("\n")
         end
     end
 
