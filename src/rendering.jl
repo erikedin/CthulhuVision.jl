@@ -13,21 +13,7 @@ using CthulhuVision.Materials
 using CthulhuVision.Triangles
 using CthulhuVision.Scenes
 
-@inline function hit(objects::CuDeviceArray{Triangle, 1, CUDAnative.AS.Global}, tmin::Float32, tmax::Float32, ray::Ray) :: HitRecord
-    rec = HitRecord()
-
-    for o in objects
-        r = hittriangle(o, tmin, tmax, ray)
-
-        if r.ishit && r.t < rec.t
-            rec = r
-        end
-    end
-
-    rec
-end
-
-@inline function color(r::Ray, objects::CuDeviceArray{Triangle, 1, CUDAnative.AS.Global}, settings::SceneSettings, rng::UniformRNG) :: RGB
+@inline function color(r::Ray, acceleration::BVHAcceleration, world::World, settings::SceneSettings, rng::UniformRNG) :: RGB
     maxbounces = 50
 
     attenuation = RGB(1.0f0, 1.0f0, 1.0f0)
@@ -35,7 +21,7 @@ end
     ray = r
 
     for i = 1:maxbounces
-        rec = hit(objects, 0.001f0, typemax(Float32), ray)
+        rec = hitacceleration(acceleration, 0.001f0, typemax(Float32), ray, world)
 
         if rec.ishit
             scattered = scatter(ray, rec, rng)
@@ -64,11 +50,14 @@ struct RenderSettings
     nsamples::UInt32
 end
 
-function gpurender(a, camera, width, height, scenesettings, rendersettings::RenderSettings, objects)
+function gpurender(a, camera, width, height, scenesettings, rendersettings::RenderSettings, bvhnodes, vertexes, meshtriangles, instances)
     y = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     x = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
     rng = makeprng()
+
+    acceleration = BVHAcceleration(bvhnodes)
+    world = World(vertexes, meshtriangles, instances)
 
     if x <= width && y <= height
         col = RGB(0.0f0, 0.0f0, 0.0f0)
@@ -79,7 +68,7 @@ function gpurender(a, camera, width, height, scenesettings, rendersettings::Rend
             u = Float32((x + dx) / width)
             v = Float32((y + dy) / height)
             ray = getray(camera, u, v, rng)
-            col = col + color(ray, objects, scenesettings, rng)
+            col = col + color(ray, acceleration, world, scenesettings, rng)
         end
 
         col /= Float32(rendersettings.nsamples)
@@ -93,14 +82,20 @@ end
 function render(image::PPM, camera, scene::Scene, rendersettings::RenderSettings)
     CuArrays.@allowscalar false
 
+    rng = uniformfromindex(0)
+    bvhnodes = buildacceleration(scene.hitables, rng)
+
     pixels = CuArray{RGB}(undef, image.dimension.height, image.dimension.width)
-    objects_d = CuArray{Triangle}(scene.objects)
+    bvhnodes_d = CuArray{BVHNode}(bvhnodes)
+    vertexes_d = CuArray{Vector3}(scene.vertexes)
+    meshtriangles_d = CuArray{MeshTriangle}(scene.meshtriangles)
+    instances_d = CuArray{MeshInstance}(scene.instances)
 
     blocks = ceil(Int, image.dimension.height / 16), ceil(Int, image.dimension.width / 16)
     threads = (16, 16)
 
     CuArrays.@sync begin
-        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, rendersettings, objects_d)
+        @cuda threads=threads blocks=blocks gpurender(pixels, camera, image.dimension.width, image.dimension.height, scene.settings, rendersettings, bvhnodes_d, vertexes_d, meshtriangles_d, instances_d)
     end
 
     cpuarray = Array{RGB, 2}(pixels)
