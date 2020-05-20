@@ -307,6 +307,7 @@ end
                 triangleindex = gettriangleindex(node)
                 # @cuprintf("Leaf node: Instance %d    Triangle %d\n", instanceindex, triangleindex)
                 triangle = gettriangle(world, instanceindex, triangleindex)
+                # @cuprintf("Leaf Triangle %f %f %f   %f %f %f    %f %f %f\n", triangle.a.x, triangle.a.y, triangle.a.z, triangle.b.x, triangle.b.y, triangle.b.z, triangle.c.x, triangle.c.y, triangle.c.z)
                 thisrec = hittriangle(triangle, tmin, tmax, ray)
 
                 # if thisrec.ishit

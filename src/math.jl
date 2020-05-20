@@ -178,7 +178,7 @@ function translation(v::Vector3) :: Transform
         1f0, 0f0, 0f0, v.x,
         0f0, 1f0, 0f0, v.y,
         0f0, 0f0, 1f0, v.z,
-        0f0, 0f0, 0f0, 1f0,
+        0f0, 0f0, 0f0, 0f0,
     )
 end
 

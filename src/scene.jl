@@ -65,8 +65,8 @@ function addinstance!(scene::Scene, instance::MeshInstance)
     push!(scene.instances, instance)
     instanceindex = length(scene.instances)
 
-    println("Instance transform: $(instance.tform)")
-    println("")
+    # println("Instance transform: $(instance.tform)")
+    # println("")
 
     # This tells us where all the triangle indexes are.
     locations = scene.meshes[instance.meshindex]
@@ -76,19 +76,19 @@ function addinstance!(scene::Scene, instance::MeshInstance)
         v1 = instance.tform * scene.vertexes[meshtriangle.vertex1]
         v2 = instance.tform * scene.vertexes[meshtriangle.vertex2]
         v3 = instance.tform * scene.vertexes[meshtriangle.vertex3]
-        println("World vertexes $v1    $v2    $v3")
+        # println("World vertexes $v1    $v2    $v3")
 
         box = AABB(v1, v2, v3)
 
-        println("Mesh triangle: $index: $meshtriangle")
-        println("Box $box")
+        # println("Mesh triangle: $index: $meshtriangle")
+        # println("Box $box")
 
         hitable = Hitable(box, index, instanceindex)
         push!(scene.hitables, hitable)
     end
 
-    println("")
-    println("")
+    # println("")
+    # println("")
 end
 
 end

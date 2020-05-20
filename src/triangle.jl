@@ -40,23 +40,27 @@ end
     v0v1 = tri.b - tri.a
     v0v2 = tri.c - tri.a
 
-    normal = cross(v0v1, v0v2)
-    nr = dot(normal, direction(ray))
+    direct = unit(direction(ray))
+
+    normal = unit(cross(v0v1, v0v2))
+    nr = dot(normal, direct)
 
     # Very nearly parallel, so don't report a hit.
     if abs(nr) < 0.0001f0
+        #@cuprintf("Nearly parallel  Ray %f %f %f    %f %f %f Triangle %f %f %f   %f %f %f    %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z, tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z)
         return HitRecord()
     end
 
     no = dot(normal, origin(ray))
-    d = dot(normal, tri.a)
+    d = -dot(normal, tri.a)
     t = -(no + d) / nr
 
     if t < tmin || t > tmax
+        #@cuprintf("normal %f %f %f   no %f   nr %f   d %f   t %f  Ray %f %f %f    %f %f %f Triangle %f %f %f   %f %f %f    %f %f %f\n", normal.x, normal.y, normal.z, no, nr, d, t, origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z, tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z)
         return HitRecord()
     end
 
-    p = origin(ray) + t * direction(ray)
+    p = origin(ray) + t * direct
 
     # Determine if p is inside the triangle.
     edge0 = tri.b - tri.a
@@ -73,6 +77,7 @@ end
 
     # The hit point p is on the wrong side of one of the edges.
     if dot(e0, normal) < 0f0 || dot(e1, normal) < 0f0 || dot(e2, normal) < 0f0
+        #@cuprintf("Wrong side tmin %f   tmax %f   Ray %f %f %f    %f %f %f Triangle %f %f %f   %f %f %f    %f %f %f\n", tmin, tmax, origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z, tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z)
         return HitRecord()
     end
 
