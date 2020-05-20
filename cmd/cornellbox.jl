@@ -71,6 +71,35 @@ function constructscene() :: Scene
     )
     wallmeshindex = addmesh!(scene, wallmesh)
 
+    shortmesh = Mesh(
+        # Vertexes
+        [
+            # Front vertexes
+            Vector3(-82.5f0, -82.5f0, 82.5f0),
+            Vector3( 82.5f0, -82.5f0, 82.5f0),
+            Vector3(-82.5f0,  82.5f0, 82.5f0),
+            Vector3(-82.5f0,  82.5f0, 82.5f0),
+
+            # Back vertexes
+            Vector3(-82.5f0, -82.5f0, -82.5f0),
+            Vector3( 82.5f0, -82.5f0, -82.5f0),
+            Vector3(-82.5f0,  82.5f0, -82.5f0),
+            Vector3(-82.5f0,  82.5f0, -82.5f0),
+        ],
+
+        # Triangles
+        [
+            # Front face
+            MeshTriangle(1, 2, 4),
+            MeshTriangle(2, 3, 4),
+
+            # Back face
+            MeshTriangle(5, 6, 8),
+            MeshTriangle(6, 7, 8),
+        ]
+    )
+    # shortmeshindex = addmesh!(scene, shortmesh)
+
     # Back wall
     addinstance!(
         scene,
@@ -121,6 +150,16 @@ function constructscene() :: Scene
             translation(Vector3( 277.5f0, 0f0, -277.5f0)) * rotation(-Float32(π) / 2f0, Vector3(0f0, 1f0, 0f0))
         )
     )
+
+    # Short block
+    # addinstance!(
+    #     scene,
+    #     MeshInstance(
+    #         shortmeshindex,
+    #         white,
+    #         translation(Vector3(130f0, 82.5f0, 0f0)) * rotation(0f0, Vector3(0f0, 0f0, 0f0)),
+    #     )
+    # )
 
     scene
 end
