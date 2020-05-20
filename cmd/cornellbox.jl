@@ -86,8 +86,8 @@ function constructscene() :: Scene
         scene,
         MeshInstance(
             wallmeshindex,
-            red,
-            translation(Vector3(0f0, -277.5f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(1f0, 0f0, 0f0)),
+            white,
+            translation(Vector3(0f0, -277.5f0, -277.5f0)) * rotation(-Float32(π) / 2f0, Vector3(1f0, 0f0, 0f0)),
         )
     )
 
@@ -118,7 +118,7 @@ function constructscene() :: Scene
         MeshInstance(
             wallmeshindex,
             green,
-            translation(Vector3( 277.5f0, 0f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(0f0, 1f0, 0f0))
+            translation(Vector3( 277.5f0, 0f0, -277.5f0)) * rotation(-Float32(π) / 2f0, Vector3(0f0, 1f0, 0f0))
         )
     )
 
