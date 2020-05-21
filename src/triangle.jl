@@ -47,7 +47,6 @@ end
 
     # Very nearly parallel, so don't report a hit.
     if abs(nr) < 0.0001f0
-        #@cuprintf("Nearly parallel  Ray %f %f %f    %f %f %f Triangle %f %f %f   %f %f %f    %f %f %f\n", origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z, tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z)
         return HitRecord()
     end
 
@@ -56,7 +55,6 @@ end
     t = -(no + d) / nr
 
     if t < tmin || t > tmax
-        #@cuprintf("normal %f %f %f   no %f   nr %f   d %f   t %f  Ray %f %f %f    %f %f %f Triangle %f %f %f   %f %f %f    %f %f %f\n", normal.x, normal.y, normal.z, no, nr, d, t, origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z, tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z)
         return HitRecord()
     end
 
