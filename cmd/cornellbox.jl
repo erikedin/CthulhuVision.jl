@@ -77,13 +77,13 @@ function constructscene() :: Scene
             # Front vertexes
             Vector3(-82.5f0, -82.5f0, 82.5f0),
             Vector3( 82.5f0, -82.5f0, 82.5f0),
-            Vector3(-82.5f0,  82.5f0, 82.5f0),
+            Vector3( 82.5f0,  82.5f0, 82.5f0),
             Vector3(-82.5f0,  82.5f0, 82.5f0),
 
             # Back vertexes
             Vector3(-82.5f0, -82.5f0, -82.5f0),
             Vector3( 82.5f0, -82.5f0, -82.5f0),
-            Vector3(-82.5f0,  82.5f0, -82.5f0),
+            Vector3( 82.5f0,  82.5f0, -82.5f0),
             Vector3(-82.5f0,  82.5f0, -82.5f0),
         ],
 
@@ -94,11 +94,27 @@ function constructscene() :: Scene
             MeshTriangle(2, 3, 4),
 
             # Back face
-            MeshTriangle(5, 6, 8),
-            MeshTriangle(6, 7, 8),
+            MeshTriangle(6, 5, 7),
+            MeshTriangle(5, 8, 7),
+
+            # Left face
+            MeshTriangle(5, 1, 8),
+            MeshTriangle(1, 4, 8),
+
+            # Right face
+            MeshTriangle(2, 6, 3),
+            MeshTriangle(6, 7, 3),
+
+            # Top face
+            MeshTriangle(4, 3, 8),
+            MeshTriangle(3, 7, 8),
+
+            # Bottom face
+            MeshTriangle(5, 6, 1),
+            MeshTriangle(6, 2, 1),
         ]
     )
-    # shortmeshindex = addmesh!(scene, shortmesh)
+    shortmeshindex = addmesh!(scene, shortmesh)
 
     # Back wall
     addinstance!(
@@ -152,14 +168,15 @@ function constructscene() :: Scene
     )
 
     # Short block
-    # addinstance!(
-    #     scene,
-    #     MeshInstance(
-    #         shortmeshindex,
-    #         white,
-    #         translation(Vector3(130f0, 82.5f0, 0f0)) * rotation(0f0, Vector3(0f0, 0f0, 0f0)),
-    #     )
-    # )
+    addinstance!(
+        scene,
+        MeshInstance(
+            shortmeshindex,
+            blue,
+            # identitytransform(),
+            translation(Vector3(87.5f0, -195f0, -147.5f0)) * rotation(-Float32(2.0 * π) * 0.05f0, Vector3(0f0, 1f0, 0f0)),
+        )
+    )
 
     scene
 end
@@ -169,7 +186,7 @@ end
 ##################
 
 scene = constructscene()
-rendersettings = RenderSettings(10000)
+rendersettings = RenderSettings(100)
 
 render(image, camera, scene, rendersettings)
 
