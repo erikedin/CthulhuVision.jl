@@ -24,12 +24,13 @@ red = lambertian(RGB(0.9f0, 0.1f0, 0.1f0))
 green = lambertian(RGB(0.1f0, 0.9f0, 0.1f0))
 blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
 white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
+light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(1f0, 1f0, 1f0))
 
 #################
 # SceneSettings #
 #################
 
-ambientemission = RGB(0.5f0, 0.7f0, 1.0f0)
+ambientemission = RGB(0.0f0, 0.0f0, 0.0f0)
 settings = SceneSettings(ambientemission)
 
 ##########
@@ -116,6 +117,23 @@ function constructscene() :: Scene
     )
     shortmeshindex = addmesh!(scene, shortmesh)
 
+    lightmesh = Mesh(
+        # Vertexes
+        [
+            Vector3(-65f0, -52.5f0, 0f0),
+            Vector3( 65f0, -52.5f0, 0f0),
+            Vector3( 65f0,  52.5f0, 0f0),
+            Vector3(-65f0,  52.5f0, 0f0),
+        ],
+    
+        # Triangles
+        [
+            MeshTriangle(1, 2, 4),
+            MeshTriangle(2, 3, 4),
+        ]
+    )
+    lightmeshindex = addmesh!(scene, lightmesh)
+
     # Back wall
     addinstance!(
         scene,
@@ -186,6 +204,16 @@ function constructscene() :: Scene
             white,
             # identitytransform(),
             translation(Vector3(-97.5f0, -112.5f0, -347.5f0)) * rotation(Float32(2.0 * π) * 0.041667f0, Vector3(0f0, 1f0, 0f0)) * scale(Vector3(1f0, 2f0, 1f0)),
+        )
+    )
+
+    # Light
+    addinstance!(
+        scene,
+        MeshInstance(
+            lightmeshindex,
+            light,
+            translation(Vector3(0f0,  277.4f0, -277.5f0)) * rotation(Float32(π) / 2f0, Vector3(1f0, 0f0, 0f0)),
         )
     )
 
