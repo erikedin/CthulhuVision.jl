@@ -172,9 +172,20 @@ function constructscene() :: Scene
         scene,
         MeshInstance(
             shortmeshindex,
-            blue,
+            white,
             # identitytransform(),
             translation(Vector3(87.5f0, -195f0, -147.5f0)) * rotation(-Float32(2.0 * π) * 0.05f0, Vector3(0f0, 1f0, 0f0)),
+        )
+    )
+
+    # Tall block
+    addinstance!(
+        scene,
+        MeshInstance(
+            shortmeshindex,
+            white,
+            # identitytransform(),
+            translation(Vector3(-97.5f0, -112.5f0, -347.5f0)) * rotation(Float32(2.0 * π) * 0.041667f0, Vector3(0f0, 1f0, 0f0)) * scale(Vector3(1f0, 2f0, 1f0)),
         )
     )
 

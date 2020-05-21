@@ -1,7 +1,7 @@
 module Math
 
 export Vector3, Point, len, unit, dot, randominunitsphere, squaredlength, cross, lenhost, unithost, Transform
-export identitytransform, translation, rotation, permute
+export identitytransform, translation, rotation, permute, scale
 
 using CUDAnative
 using CthulhuVision.Random
@@ -210,6 +210,15 @@ function rotation(θ::Float32, axis::Vector3) :: Transform
         e21, e22, e23, e24,
         e31, e32, e33, e34,
         e41, e42, e43, e44,
+    )
+end
+
+function scale(v::Vector3) :: Transform
+    Transform(
+        v.x, 0f0, 0f0, 0f0,
+        0f0, v.y, 0f0, 0f0,
+        0f0, 0f0, v.z, 0f0,
+        0f0, 0f0, 0f0, 1f0,
     )
 end
 
