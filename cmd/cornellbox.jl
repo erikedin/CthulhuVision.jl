@@ -24,7 +24,7 @@ red = lambertian(RGB(0.9f0, 0.1f0, 0.1f0))
 green = lambertian(RGB(0.1f0, 0.9f0, 0.1f0))
 blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
 white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
-light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(1f0, 1f0, 1f0))
+light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(10f0, 10f0, 10f0))
 
 #################
 # SceneSettings #
@@ -225,7 +225,7 @@ end
 ##################
 
 scene = constructscene()
-rendersettings = RenderSettings(100)
+rendersettings = RenderSettings(20000)
 
 render(image, camera, scene, rendersettings)
 
