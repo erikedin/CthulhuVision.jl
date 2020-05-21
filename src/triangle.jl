@@ -77,8 +77,11 @@ end
 
     # The hit point p is on the wrong side of one of the edges.
     if dot(e0, normal) < 0f0 || dot(e1, normal) < 0f0 || dot(e2, normal) < 0f0
-        #@cuprintf("Wrong side tmin %f   tmax %f   Ray %f %f %f    %f %f %f Triangle %f %f %f   %f %f %f    %f %f %f\n", tmin, tmax, origin(ray).x, origin(ray).y, origin(ray).z, direction(ray).x, direction(ray).y, direction(ray).z, tri.a.x, tri.a.y, tri.a.z, tri.b.x, tri.b.y, tri.b.z, tri.c.x, tri.c.y, tri.c.z)
         return HitRecord()
+    end
+
+    if nr > 0f0
+        normal = -normal
     end
 
     HitRecord(t, p, normal, tri.material)

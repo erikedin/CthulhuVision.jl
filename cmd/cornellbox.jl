@@ -25,6 +25,7 @@ green = lambertian(RGB(0.1f0, 0.9f0, 0.1f0))
 blue = lambertian(RGB(0.1f0, 0.1f0, 0.9f0))
 white = lambertian(RGB(1.0f0, 1.0f0, 1.0f0))
 light = lambertian(RGB(1f0, 1f0, 1f0); emission = RGB(10f0, 10f0, 10f0))
+glass = dielectric(1.5f0)
 
 #################
 # SceneSettings #
@@ -196,6 +197,17 @@ function constructscene() :: Scene
         )
     )
 
+    # Glass block
+    addinstance!(
+        scene,
+        MeshInstance(
+            shortmeshindex,
+            glass,
+            # identitytransform(),
+            translation(Vector3(-97.5f0, -195f0, -147.5f0)) * rotation(-Float32(2.0 * π) * 0.05f0, Vector3(0f0, 1f0, 0f0)) * scale(Vector3(0.7f0, 0.7f0, 0.7f0)),
+        )
+    )
+
     # Tall block
     addinstance!(
         scene,
@@ -225,7 +237,7 @@ end
 ##################
 
 scene = constructscene()
-rendersettings = RenderSettings(20000)
+rendersettings = RenderSettings(30000)
 
 render(image, camera, scene, rendersettings)
 
